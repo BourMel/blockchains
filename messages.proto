@@ -1,0 +1,17 @@
+syntax = "proto3";
+package protocol;
+
+// Tries a really simple communication between 2 nodes
+service Hello {
+  rpc SayHello (HelloRequest) returns (HelloReply) {}
+}
+
+// A node tries to contact its neighbour and gives its id
+message HelloRequest {
+  int32 id = 1;
+}
+
+// The node answers to the one that tried to contact it with its id
+message HelloReply {
+  int32 id = 1;
+}
