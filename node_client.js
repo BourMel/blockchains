@@ -1,5 +1,8 @@
 var grpc = require('grpc');
-import { HOST, PORT, PROTO_PATH } from './constants.js';
+
+const HOST = 'localhost';
+const PORT = '50051';
+const PROTO_PATH = __dirname + '/messages.proto';
 
 /****************/
 /***Block Node***/
@@ -16,7 +19,7 @@ function main() {
     console.log('Id:', response.message);
   });
 
-  console.log('Client finit');
+  console.log('Fin client');
 }
 
 main();

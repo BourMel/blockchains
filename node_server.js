@@ -1,5 +1,8 @@
 var grpc = require('grpc');
-import { HOST, PORT, PROTO_PATH } from './constants.js';
+
+const HOST = 'localhost';
+const PORT = '50051';
+const PROTO_PATH = __dirname + '/messages.proto';
 
 /****************/
 /***Block Node***/
@@ -7,14 +10,14 @@ import { HOST, PORT, PROTO_PATH } from './constants.js';
 var proto = grpc.load(PROTO_PATH).protocol;
 
 function main() {
-  console.log('Client lancé');
+  console.log('Serveur lancé');
 
   var server = new grpc.Server();
 
   server.addService(proto.Hello.service, {sayHello: sayHello});
   server.bind('0.0.0.0:' + PORT, grpc.ServerCredentials.createInsecure());
   server.start();
-  console.log('Client finit');
+  console.log('Fin serveur');
 }
 
 /*********************************/
