@@ -3,6 +3,7 @@ var grpc = require('grpc');
 const HOST = 'localhost';
 const PORT = '50051';
 const PROTO_PATH = __dirname + '/messages.proto';
+const NODE_ID = 42;
 
 /****************/
 /***Block Node***/
@@ -15,8 +16,10 @@ function main() {
 
   var client = new proto.Hello(HOST + ':' + PORT, grpc.credentials.createInsecure());
 
-  client.sayHello({id: 42}, function(err, response) {
-    console.log('Id:', response.message);
+  console.log('Asking the node\'s id');
+
+  client.sayHello({id: NODE_ID}, function(err, response) {
+    console.log('Other Node Id:', response.id);
   });
 
   console.log('Fin client');
