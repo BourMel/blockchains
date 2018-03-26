@@ -25,4 +25,15 @@ function sayHello(call, callback) {
   callback(null, {id: port});
 }
 
+// first, run the server
 startServer();
+
+// then, greet the neighbor
+if (args.length >= 4) {
+  let client = new proto.Hello(args[2] + ':' + args[3], grpc.credentials.createInsecure());
+  console.log(`Asking node's id (${args[2]}, ${args[3]})`);
+  client.sayHello({id: 42}, function(err, response) {
+    console.log('Other Node Id:', response.id);
+  });
+  console.log('call ended');
+}
