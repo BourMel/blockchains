@@ -15,3 +15,31 @@ message HelloRequest {
 message HelloReply {
   int32 id = 1;
 }
+
+message Operation {
+  string id = 1;
+  string name = 2;
+  repeated string args = 3;
+}
+
+message Block {
+  string hash = 1;
+  int32 depth = 2;
+  repeated Operation operations = 3;
+}
+
+// participant
+message NodeMember {
+  string host = 1;
+  int32 port = 2;
+  int32 merit = 3;
+}
+
+message Node {
+  string host = 1;
+  int32 port = 2;
+  repeated Node neighbors = 3;
+  repeated Operation waitlist = 4; // operations
+  repeated NodeMember members = 5;
+  repeated Block chain = 6;
+}
