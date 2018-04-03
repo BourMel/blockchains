@@ -9,12 +9,21 @@ const host = (args.length >= 1) ? args[0] : 'localhost';
 const port = (args.length >= 2) ? args[1] : Math.floor(Math.random() * 100) + 50000;
 const protoPath = `${__dirname}/messages.proto`;
 const proto = grpc.load(protoPath).protocol;
+const neighbors = [];
 
 //should be empty when launched (filled for test purposes)
 var nodeMembers = {
   1: {host: 'localhost', port: '50008', merit: 0.5},
   2: {host: 'localhost', port: '50007', merit: 0.5}
 };
+
+
+function addNeighbor(neighbor) {
+  if (!neighbors.includes(neighbor)) {
+    console.log(`new neighbor: ${JSON.stringify(neighbor)}`);
+    neighbors.push(neighbor);
+  }
+}
 
 /***************/
 /***FUNCTIONS***/
@@ -47,8 +56,11 @@ function displayParticipants() {
 
 // function used by the server to answer other nodes requests
 function sayHello(call, callback) {
-  console.log('sending my id');
-  callback(null, {id: port});
+  addNeighbor(call.request);
+  callback(null, {
+    'host': host,
+    'port': parseInt(port)
+  });
 }
 
 function tryRegister(call, callback) {
@@ -85,13 +97,24 @@ function tryRegister(call, callback) {
 
 // first, run the server
 startServer();
+setInterval(() => {
+  console.log(`neighbors: ${JSON.stringify(neighbors)}`);
+}, 2000);
 
 // then, greet the neighbor
 if (args.length >= 4) {
-  let client = new proto.Hello(args[2] + ':' + args[3], grpc.credentials.createInsecure());
-  console.log(`Asking node's id (${args[2]}, ${args[3]})`);
-  client.sayHello({id: 42}, function(err, response) {
-    console.log('Other Node Id:', response.id);
+  const neighborHost = args[2];
+  const neighborPort = parseInt(args[3]);
+  const client = new proto.Hello(`${neighborHost}:${neighborPort}`, grpc.credentials.createInsecure());
+  console.log(`Asking node's location (${neighborHost}:${neighborPort})`);
+  client.sayHello({
+    'host': host,
+    'port': parseInt(port)
+  }, function(err, response) {
+    if (response.host === neighborHost && response.port === neighborPort) {
+      addNeighbor(response);
+    }
+    console.log(`other node location: (${response.host}:${response.port})`);
   });
   console.log('call ended');
 }

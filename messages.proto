@@ -13,12 +13,14 @@ service Register {
 
 // A node tries to contact its neighbour and gives its id
 message HelloRequest {
-  int32 id = 1;
+  string host = 1;
+  int32 port = 2;
 }
 
 // The node answers to the one that tried to contact it with its id
 message HelloReply {
-  int32 id = 1;
+  string host = 1;
+  int32 port = 2;
 }
 
 // A participant ask if he can register to a node
