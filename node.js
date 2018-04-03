@@ -102,7 +102,10 @@ setInterval(() => {
 }, 2000);
 
 // then, greet the neighbor
-if (args.length >= 4) {
+
+let neighborsArgs = args.slice(2);
+
+while (neighborsArgs.length >= 2) {
   const neighborHost = args[2];
   const neighborPort = parseInt(args[3]);
   const client = new proto.Hello(`${neighborHost}:${neighborPort}`, grpc.credentials.createInsecure());
@@ -111,10 +114,15 @@ if (args.length >= 4) {
     'host': host,
     'port': parseInt(port)
   }, function(err, response) {
+    if (err) {
+      console.log(`ERROR: cannot add ${neighborHost}:${neighborPort} as neighbor.`);
+      return;
+    }
     if (response.host === neighborHost && response.port === neighborPort) {
       addNeighbor(response);
     }
     console.log(`other node location: (${response.host}:${response.port})`);
   });
   console.log('call ended');
+  neighborsArgs = neighborsArgs.slice(2);
 }
