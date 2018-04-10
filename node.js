@@ -12,15 +12,19 @@ const proto = grpc.load(protoPath).protocol;
 const neighbors = [];
 
 //should be empty when launched (filled for test purposes)
-var nodeMembers = {
-  1: {host: 'localhost', port: '50008', merit: 0.5},
-  2: {host: 'localhost', port: '50007', merit: 0.5}
-};
+var nodeMembers = [
+  {host: 'localhost', port: '50008', merit: 0.5},
+  {host: 'localhost', port: '50007', merit: 0.5}
+];
 
+
+function printConsole(msg) {
+  console.log(`[${host}:${port}]\t${msg}`);
+}
 
 function addNeighbor(neighbor) {
   if (!neighbors.includes(neighbor)) {
-    console.log(`new neighbor: ${JSON.stringify(neighbor)}`);
+    printConsole(`new neighbor: ${JSON.stringify(neighbor)}`);
     neighbors.push(neighbor);
   }
 }
@@ -32,7 +36,7 @@ function addNeighbor(neighbor) {
 // server part of the node
 function startServer() {
   "use strict";
-  console.log('starting server...');
+  printConsole('starting server...');
 
   let server = new grpc.Server();
 
@@ -41,12 +45,12 @@ function startServer() {
   server.bind('0.0.0.0:' + port, grpc.ServerCredentials.createInsecure());
   server.start();
 
-  console.log(`server started at (${host}, ${port})! id : ${port}`);
+  printConsole(`server started at (${host}, ${port})! id : ${port}`);
 }
 
 function displayParticipants() {
   for(const key of Object.keys(nodeMembers)) {
-    console.log(nodeMembers[key]);
+    printConsole(nodeMembers[key]);
   }
 }
 
@@ -64,7 +68,7 @@ function sayHello(call, callback) {
 }
 
 function tryRegister(call, callback) {
-  console.log('A participant wants to register. Our participants now :');
+  printConsole('A participant wants to register. Our participants now :');
   displayParticipants();
 
   //counts participants
@@ -93,7 +97,7 @@ function tryRegister(call, callback) {
     nodeMembers[key].merit = newMerit;
   }
 
-  console.log(`participant registered`);
+  printConsole(`participant registered`);
   displayParticipants();
   callback(null, {accepted: true});
 }
@@ -105,7 +109,7 @@ function tryRegister(call, callback) {
 // first, run the server
 startServer();
 setInterval(() => {
-  console.log(`neighbors: ${JSON.stringify(neighbors)}`);
+  printConsole(`neighbors: ${JSON.stringify(neighbors)}`);
 }, 2000);
 
 // then, greet the neighbor
@@ -116,20 +120,20 @@ while (neighborsArgs.length >= 2) {
   const neighborHost = args[2];
   const neighborPort = parseInt(args[3]);
   const client = new proto.Hello(`${neighborHost}:${neighborPort}`, grpc.credentials.createInsecure());
-  console.log(`Asking node's location (${neighborHost}:${neighborPort})`);
+  printConsole(`Asking node's location (${neighborHost}:${neighborPort})`);
   client.sayHello({
     'host': host,
     'port': parseInt(port)
   }, function(err, response) {
     if (err) {
-      console.log(`ERROR: cannot add ${neighborHost}:${neighborPort} as neighbor.`);
+      printConsole(`ERROR: cannot add ${neighborHost}:${neighborPort} as neighbor.`);
       return;
     }
     if (response.host === neighborHost && response.port === neighborPort) {
       addNeighbor(response);
     }
-    console.log(`other node location: (${response.host}:${response.port})`);
+    printConsole(`other node location: (${response.host}:${response.port})`);
   });
-  console.log('call ended');
+  printConsole('call ended');
   neighborsArgs = neighborsArgs.slice(2);
 }
