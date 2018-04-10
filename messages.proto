@@ -11,6 +11,10 @@ service Register {
   rpc tryRegister (NodeMember) returns (Reply) {}
 }
 
+service Broadcast {
+  rpc tryBroadcast (Message) returns (Empty) {}
+}
+
 // A node tries to contact its neighbour and gives its id
 message HelloRequest {
   string host = 1;
@@ -54,4 +58,14 @@ message Node {
   repeated Operation waitlist = 4; // operations
   repeated NodeMember members = 5;
   repeated Block chain = 6;
+}
+
+message Empty {}
+
+// for broadcasting, ...
+message Message {
+  string type = 1;
+  oneof msg {
+    string str = 2;
+  }
 }
