@@ -43,6 +43,7 @@ function startServer() {
 
   server.addService(proto.Hello.service, {sayHello: sayHello});
   server.addService(proto.Register.service, {tryRegister: tryRegister});
+  server.addService(proto.Broadcast.service, {tryBroadcast: tryBroadcast});
   server.bind('0.0.0.0:' + utils.port, grpc.ServerCredentials.createInsecure());
   server.start();
 
@@ -127,6 +128,13 @@ function tryRegister(call, callback) {
   callback(null, {accepted: true});
 }
 
+
+
+function tryBroadcast(call, callback) {
+  printConsole(`GOT MSG: ${call.request.str}`);
+  callback(null, {});
+}
+
 /*************/
 /***RUNNING***/
 /*************/
@@ -135,6 +143,7 @@ function tryRegister(call, callback) {
 startServer();
 setInterval(() => {
   printConsole(`neighbors: ${JSON.stringify(neighbors)}`);
+  broadcast();
 }, 2000);
 
 // then, greet the neighbor
@@ -161,4 +170,20 @@ while (neighborsArgs.length >= 2) {
   });
   printConsole('call ended');
   neighborsArgs = neighborsArgs.slice(2);
+}
+
+
+function broadcast() {
+  for (let neighbor of neighbors) {
+    printConsole(`[BROADCAST]\t${neighbor.host}:${neighbor.port}`);
+    const client = new proto.Broadcast(`${neighbor.host}:${neighbor.port}`, grpc.credentials.createInsecure());
+    client.tryBroadcast({
+      'type': 'str',
+      'str': 'this is a test!!'
+    }, function (err, response) {
+      if (err) {
+        printConsole(`ERROR: cannot broadcast to ${neighbor.host}:${neighbor.port} (${err})`);
+      }
+    });
+  }
 }
