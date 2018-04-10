@@ -2,8 +2,11 @@
 
 // require part
 const grpc = require('grpc');
+const uuidv4 = require('uuid/v4');
 
 // init
+const MAX_OP = 4;
+
 const args = process.argv.slice(2);
 const host = (args.length >= 1) ? args[0] : 'localhost';
 const port = (args.length >= 2) ? args[1] : Math.floor(Math.random() * 100) + 50000;
@@ -11,11 +14,12 @@ const protoPath = `${__dirname}/messages.proto`;
 const proto = grpc.load(protoPath).protocol;
 const neighbors = [];
 const blockchain = [];
+const unsaved_op = [];
 
 //should be empty when launched (filled for test purposes)
 var nodeMembers = [
-  {host: 'localhost', port: '50008', merit: 0.5},
-  {host: 'localhost', port: '50007', merit: 0.5}
+  // {host: 'localhost', port: '50008', merit: 0.5},
+  // {host: 'localhost', port: '50007', merit: 0.5}
 ];
 
 
@@ -52,18 +56,29 @@ function startServer() {
 }
 
 function createBlock() {
-  let block = {
-    creator: {host: host, port: port},
-    hash: "thisIsNotAHash", //@TODO
-    depth: blockchain.length + 1,
-    operations: {} //@TODO
-  }
+  if(unsaved_op.length != 0) {
 
-  blockchain.push(block);
-  displayBlockchain(blockchain);
+    let block = {
+      creator: {host: host, port: port},
+      hash: "thisIsNotAHash", //@TODO
+      depth: blockchain.length + 1,
+      operations: []
+    }
+
+    let nb_op = unsaved_op.length < MAX_OP ? unsaved_op.length : MAX_OP;
+
+    for(let i=0; i<nb_op; i++) {
+      block.operations.push(unsaved_op[i]);
+    }
+
+    unsaved_op.splice(0, nb_op);
+
+    blockchain.push(block);
+    displayBlockchain(blockchain);
+  }
 }
 
-function displayParticipants() {
+function displayParticipants() { //@TODO
   for(const key of Object.keys(nodeMembers)) {
     printConsole(nodeMembers[key]);
   }
@@ -74,7 +89,11 @@ function displayBlockchain(a_blockchain) {
   for(const key of Object.keys(a_blockchain)) {
     printConsole('[ creator:' + a_blockchain[key].creator.host + ':' + a_blockchain[key].creator.port);
     printConsole('  hash: ' + a_blockchain[key].hash);
-    printConsole('  depth: ' + a_blockchain[key].depth + ' ]');
+    printConsole('  depth: ' + a_blockchain[key].depth + ' | operations :');
+    a_blockchain[key].operations.map(function(current) {
+      printConsole('[ ' + current.id + ' | ' + current.name + ' ]');
+    });
+    printConsole('_______________________________________________________');
   }
   printConsole('______________________END_BLOCKCHAIN______________________');
 }
@@ -125,6 +144,15 @@ function tryRegister(call, callback) {
   printConsole(`participant registered`);
   displayParticipants();
   callback(null, {accepted: true});
+
+  unsaved_op.push({
+    id: uuidv4(),
+    name: 'participant_registered',
+    args: [
+      `${call.request.host}:${call.request.port}`, //participant
+      `${host}:${port}` //node he registered to
+    ]
+  });
 }
 
 /*************/
