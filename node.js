@@ -71,13 +71,20 @@ function tryRegister(call, callback) {
   var nbMembers = 0;
   for(const key of Object.keys(nodeMembers)) {
     nbMembers++;
+
+    if((nodeMembers[key].host == call.request.host)
+    && (nodeMembers[key].port == call.request.port)) {
+      console.log('The participant was already registered to this node.');
+      callback(null, {accepted: false});
+      return;
+    }
   }
 
   var newMerit = 1/(nbMembers+1);
 
   nodeMembers[nbMembers+1] = {
-    host: 'localhost',
-    port: 50000, //@TODO : le participant n'envoie que son id pour l'instant. + comment récupérer
+    host: call.request.host,
+    port: call.request.port,
     merit: newMerit
   };
 
@@ -88,7 +95,7 @@ function tryRegister(call, callback) {
 
   console.log(`participant registered`);
   displayParticipants();
-  callback(null, {registered: true});
+  callback(null, {accepted: true});
 }
 
 /*************/

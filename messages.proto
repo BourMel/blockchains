@@ -8,7 +8,7 @@ service Hello {
 
 // a participant asks if he can register to a node
 service Register {
-  rpc tryRegister (RegisterRequest) returns (RegisterReply) {}
+  rpc tryRegister (NodeMember) returns (Reply) {}
 }
 
 // A node tries to contact its neighbour and gives its id
@@ -23,14 +23,9 @@ message HelloReply {
   int32 port = 2;
 }
 
-// A participant ask if he can register to a node
-message RegisterRequest {
-  int32 id = 1;
-}
-
-// A node can accept or reject a registration from a participant
-message RegisterReply {
-  bool registered = 1;
+// A node can accept or reject
+message Reply {
+  bool accepted = 1;
 }
 
 message Operation {
@@ -49,7 +44,7 @@ message Block {
 message NodeMember {
   string host = 1;
   int32 port = 2;
-  int32 merit = 3;
+  // int32 merit = 3;
 }
 
 message Node {

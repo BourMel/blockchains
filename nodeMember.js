@@ -8,16 +8,23 @@ const args = process.argv.slice(2);
 const protoPath = `${__dirname}/messages.proto`;
 const proto = grpc.load(protoPath).protocol;
 
-if(args.length >= 3) {
-  console.log(`nodeMember ${args[0]} trying to register to ${args[1]} : ${args[2]}...`);
+if(args.length == 4) {
 
-  let node = new proto.Register(args[1] + ':' + args[2], grpc.credentials.createInsecure());
+  const host = (args.length >= 1) ? args[0] : null;
+  const port = (args.length >= 2) ? parseInt(args[1]) : null;
+  const n_host = (args.length >= 2) ? args[2] : null;
+  const n_port = (args.length >= 2) ? parseInt(args[3]) : null;
 
-  node.tryRegister({id: parseInt(args[0])}, function(err, response) {
-    console.log('Registration accepted:' + response); //@TODO : récupérer l'état true/false
+
+  console.log(`nodeMember ${host}: ${port} trying to register to ${n_host} : ${n_port}...`);
+
+  let node = new proto.Register(n_host + ':' + n_port, grpc.credentials.createInsecure());
+
+  node.tryRegister({host: host, port: port}, function(err, response) {
+    console.log('Registration accepted:' + response.accepted);
     console.log('End');
   });
 
 } else {
-  console.log(`USAGE : [my_id] [host] [port]`);
+  console.log(`USAGE : [participant_host] [participant_port] [node_host] [node_port]`);
 }
