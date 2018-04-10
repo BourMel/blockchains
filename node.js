@@ -10,6 +10,7 @@ const port = (args.length >= 2) ? args[1] : Math.floor(Math.random() * 100) + 50
 const protoPath = `${__dirname}/messages.proto`;
 const proto = grpc.load(protoPath).protocol;
 const neighbors = [];
+const blockchain = [];
 
 //should be empty when launched (filled for test purposes)
 var nodeMembers = [
@@ -46,12 +47,36 @@ function startServer() {
   server.start();
 
   printConsole(`server started at (${host}, ${port})! id : ${port}`);
+
+  setInterval(function(){createBlock();}, 10000);
+}
+
+function createBlock() {
+  let block = {
+    creator: {host: host, port: port},
+    hash: "thisIsNotAHash", //@TODO
+    depth: blockchain.length + 1,
+    operations: {} //@TODO
+  }
+
+  blockchain.push(block);
+  displayBlockchain(blockchain);
 }
 
 function displayParticipants() {
   for(const key of Object.keys(nodeMembers)) {
     printConsole(nodeMembers[key]);
   }
+}
+
+function displayBlockchain(a_blockchain) {
+  printConsole('______________________BLOCKCHAIN______________________');
+  for(const key of Object.keys(a_blockchain)) {
+    printConsole('[ creator:' + a_blockchain[key].creator.host + ':' + a_blockchain[key].creator.port);
+    printConsole('  hash: ' + a_blockchain[key].hash);
+    printConsole('  depth: ' + a_blockchain[key].depth + ' ]');
+  }
+  printConsole('______________________END_BLOCKCHAIN______________________');
 }
 
 /**********************/
@@ -78,7 +103,7 @@ function tryRegister(call, callback) {
 
     if((nodeMembers[key].host == call.request.host)
     && (nodeMembers[key].port == call.request.port)) {
-      console.log('The participant was already registered to this node.');
+      printConsole('The participant was already registered to this node.');
       callback(null, {accepted: false});
       return;
     }
