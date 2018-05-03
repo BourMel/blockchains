@@ -48,6 +48,7 @@ function startServer() {
   server.addService(proto.Hello.service, {sayHello: sayHello});
   server.addService(proto.Register.service, {tryRegister: tryRegister});
   server.addService(proto.Broadcast.service, {tryBroadcast: tryBroadcast});
+  server.addService(proto.Broadcast.service, {askBlockchain: askBlockchain});
   server.bind('0.0.0.0:' + utils.port, grpc.ServerCredentials.createInsecure());
   server.start();
 
@@ -156,11 +157,14 @@ function tryRegister(call, callback) {
   });
 }
 
-
-
 function tryBroadcast(call, callback) {
   printConsole(`GOT MSG: ${call.request.str}`);
   callback(null, {});
+}
+
+function askBlockchain(call, callback) {
+//   printConsole(`got something : ${call.request}`);
+//   callback(null, {});
 }
 
 /*************/

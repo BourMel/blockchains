@@ -15,6 +15,10 @@ service Broadcast {
   rpc tryBroadcast (Message) returns (Empty) {}
 }
 
+service GetBlockchain {
+  rpc askBlockchain (Depth) returns (Blockchain) {}
+}
+
 // A node tries to contact its neighbour and gives its id
 message HelloRequest {
   string host = 1;
@@ -44,6 +48,10 @@ message Block {
   repeated Operation operations = 3;
 }
 
+message Blockchain {
+  repeated Block block = 1;
+}
+
 // participant
 message NodeMember {
   string host = 1;
@@ -58,6 +66,11 @@ message Node {
   repeated Operation waitlist = 4; // operations
   repeated NodeMember members = 5;
   repeated Block chain = 6;
+}
+
+//length asked by a node when it wants a blockchain
+message Depth {
+  int32 depth = 1;
 }
 
 message Empty {}
