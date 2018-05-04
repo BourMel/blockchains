@@ -4,6 +4,7 @@
 const utils = require('./includes/utils');
 const grpc = require('grpc');
 const uuidv4 = require('uuid/v4');
+const shajs = require('sha.js');
 
 // init
 const MAX_OP = 4;
@@ -61,7 +62,7 @@ function createBlock() {
     let block = {
       creator_host: utils.host,
       creator_port: parseInt(utils.port),
-      hash: "thisIsNotAHash", //@TODO
+      hash: shajs('sha256').update(JSON.stringify(blockchain)).digest('hex'),
       depth: blockchain.length + 1,
       operations: []
     }

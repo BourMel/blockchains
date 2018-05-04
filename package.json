@@ -18,6 +18,7 @@
   "homepage": "https://github.com/BourMel/blockchains#readme",
   "dependencies": {
     "grpc": "^1.10.0",
+    "sha.js": "^2.4.11",
     "uuid": "^3.2.1"
   }
 }
