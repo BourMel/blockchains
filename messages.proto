@@ -46,6 +46,8 @@ message Block {
   string hash = 1;
   int32 depth = 2;
   repeated Operation operations = 3;
+  string creator_host = 5;
+  int32 creator_port = 4;
 }
 
 message Blockchain {

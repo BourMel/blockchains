@@ -14,7 +14,7 @@ utils.initHostPort(args);
 const protoPath = `${__dirname}/messages.proto`;
 const proto = grpc.load(protoPath).protocol;
 const neighbors = [];
-const blockchain = [];
+let blockchain = [];
 const unsaved_op = [];
 
 //should be empty when launched (filled for test purposes)
@@ -48,7 +48,7 @@ function startServer() {
   server.addService(proto.Hello.service, {sayHello: sayHello});
   server.addService(proto.Register.service, {tryRegister: tryRegister});
   server.addService(proto.Broadcast.service, {tryBroadcast: tryBroadcast});
-  server.addService(proto.Broadcast.service, {askBlockchain: askBlockchain});
+  server.addService(proto.GetBlockchain.service, {askBlockchain: askBlockchain});
   server.bind('0.0.0.0:' + utils.port, grpc.ServerCredentials.createInsecure());
   server.start();
 
@@ -58,10 +58,9 @@ function startServer() {
 }
 
 function createBlock() {
-  if(unsaved_op.length != 0) {
-
     let block = {
-      creator: {host: utils.host, port: utils.port},
+      creator_host: utils.host,
+      creator_port: parseInt(utils.port),
       hash: "thisIsNotAHash", //@TODO
       depth: blockchain.length + 1,
       operations: []
@@ -77,7 +76,6 @@ function createBlock() {
 
     blockchain.push(block);
     displayBlockchain(blockchain);
-  }
 }
 
 function displayParticipants() { //@TODO
@@ -89,7 +87,7 @@ function displayParticipants() { //@TODO
 function displayBlockchain(a_blockchain) {
   printConsole('______________________BLOCKCHAIN______________________');
   for(const key of Object.keys(a_blockchain)) {
-    printConsole('[ creator:' + a_blockchain[key].creator.host + ':' + a_blockchain[key].creator.port);
+    printConsole('[ creator:' + a_blockchain[key].creator_host + ':' + a_blockchain[key].creator_port);
     printConsole('  hash: ' + a_blockchain[key].hash);
     printConsole('  depth: ' + a_blockchain[key].depth + ' | operations :');
     a_blockchain[key].operations.map(function(current) {
@@ -163,8 +161,8 @@ function tryBroadcast(call, callback) {
 }
 
 function askBlockchain(call, callback) {
-//   printConsole(`got something : ${call.request}`);
-//   callback(null, {});
+  printConsole(`got something : ${call.request}`);
+  callback(null, blockchain);
 }
 
 /*************/
@@ -202,6 +200,24 @@ while (neighborsArgs.length >= 2) {
   });
   printConsole('call ended');
   neighborsArgs = neighborsArgs.slice(2);
+
+
+  const askBlockchains = new proto.GetBlockchain(`${neighborHost}:${neighborPort}`, grpc.credentials.createInsecure());
+  printConsole(`Asking node's blockchain (${neighborHost}:${neighborPort})`);
+  askBlockchains.askBlockchain({
+    depth: 1
+  }, function (err, response) {
+    if (err) {
+      printConsole(err);
+      printConsole(`ERROR: cannot get ${neighborHost}:${neighborPort}'s  blockchain.`);
+      return;
+    }
+    const res = response.block;
+    if (res.length > blockchain.length) {
+      blockchain = res;
+    }
+    printConsole('Got blockchain\n => ' + JSON.stringify(response));
+  });
 }
 
 
