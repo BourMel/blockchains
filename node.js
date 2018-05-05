@@ -80,8 +80,8 @@ function createBlock() {
 }
 
 function displayParticipants() { //@TODO
-  for(const key of Object.keys(nodeMembers)) {
-    printConsole(nodeMembers[key]);
+  for (const key of Object.keys(nodeMembers)) {
+    printConsole(JSON.stringify(nodeMembers[key]));
   }
 }
 
@@ -162,7 +162,7 @@ function tryBroadcast(call, callback) {
 }
 
 function askBlockchain(call, callback) {
-  printConsole(`got something : ${call.request}`);
+  printConsole(`got something : ${JSON.stringify(call.request)}`);
   callback(null, blockchain);
 }
 

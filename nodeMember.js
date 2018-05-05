@@ -16,13 +16,12 @@ if(args.length == 4) {
   const n_port = (args.length >= 2) ? parseInt(args[3]) : null;
 
 
-  console.log(`nodeMember ${host}: ${port} trying to register to ${n_host} : ${n_port}...`);
+  console.log(`nodeMember ${host}:${port} trying to register to ${n_host}:${n_port}...`);
 
   let node = new proto.Register(n_host + ':' + n_port, grpc.credentials.createInsecure());
 
   node.tryRegister({host: host, port: port}, function(err, response) {
-    console.log('Registration accepted:' + response.accepted);
-    console.log('End');
+    console.log('Registration accepted: ' + response.accepted);
   });
 
 } else {
