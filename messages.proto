@@ -61,6 +61,10 @@ message NodeMember {
   // int32 merit = 3;
 }
 
+message WaitingList {
+  repeated Operation operations = 1;
+}
+
 message Node {
   string host = 1;
   int32 port = 2;
@@ -82,5 +86,6 @@ message Message {
   string type = 1;
   oneof msg {
     string str = 2;
+    WaitingList WaitingList = 3;
   }
 }

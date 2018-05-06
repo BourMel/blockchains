@@ -99,6 +99,15 @@ function displayBlockchain(a_blockchain) {
   printConsole('______________________END_BLOCKCHAIN______________________');
 }
 
+function shareWaitingList() {
+  let waiting = new proto.WaitingList(waiting_list);
+
+  broadcast({
+      'type': 'WaitingList',
+      'WaitingList': waiting
+  });
+}
+
 /**********************/
 /***SERVER FUNCTIONS***/
 /**********************/
@@ -154,10 +163,22 @@ function tryRegister(call, callback) {
       `${utils.host}:${utils.port}` //node he registered to
     ]
   });
+
+  shareWaitingList();
 }
 
+//reception of a broadcasted message
 function tryBroadcast(call, callback) {
-  printConsole(`GOT MSG: ${call.request.str}`);
+  printConsole(`GOT MSG OF TYPE: ${call.request.type}`);
+
+  if(call.request.type == 'str') {
+    printConsole(call.request.str);
+  } else if(call.request.type == 'WaitingList') {
+    printConsole(JSON.stringify(call.request.WaitingList));
+
+    //@TODO traiter la liste d'attente reçue
+  }
+
   callback(null, {});
 }
 
@@ -172,10 +193,13 @@ function askBlockchain(call, callback) {
 
 // first, run the server
 startServer();
-setInterval(() => {
-  printConsole(`neighbors: ${JSON.stringify(neighbors)}`);
-  broadcast();
-}, 2000);
+// setInterval(() => {
+//   printConsole(`neighbors: ${JSON.stringify(neighbors)}`);
+//   broadcast({
+//     'type': 'str',
+//     'str': 'this is a test!!'
+//   });
+// }, 2000);
 
 // then, greet the neighbor
 
@@ -222,14 +246,11 @@ while (neighborsArgs.length >= 2) {
 }
 
 
-function broadcast() {
+function broadcast(message) {
   for (let neighbor of neighbors) {
     printConsole(`[BROADCAST]\t${neighbor.host}:${neighbor.port}`);
     const client = new proto.Broadcast(`${neighbor.host}:${neighbor.port}`, grpc.credentials.createInsecure());
-    client.tryBroadcast({
-      'type': 'str',
-      'str': 'this is a test!!'
-    }, function (err, response) {
+    client.tryBroadcast(message, function (err, response) {
       if (err) {
         printConsole(`ERROR: cannot broadcast to ${neighbor.host}:${neighbor.port} (${err})`);
       }
