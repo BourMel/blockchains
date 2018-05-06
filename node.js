@@ -104,14 +104,28 @@ function isOperationInBlockchain(operation_id, a_blockchain) {
   return false;
 }
 
-function shareWaitingList() {
+function shareWaitingList(a_neighbors) {
   let waiting = new proto.WaitingList();
   waiting.set_operations(waiting_list);
 
   broadcast({
+      'host': utils.host,
+      'port': parseInt(utils.port),
       'type': 'WaitingList',
       'WaitingList': waiting
-  });
+  }, a_neighbors);
+}
+
+function broadcast(message, a_neighbors) {
+  for (let neighbor of a_neighbors) {
+    printConsole(`[BROADCAST]\t${neighbor.host}:${neighbor.port}`);
+    const client = new proto.Broadcast(`${neighbor.host}:${neighbor.port}`, grpc.credentials.createInsecure());
+    client.tryBroadcast(message, function (err, response) {
+      if (err) {
+        printConsole(`ERROR: cannot broadcast to ${neighbor.host}:${neighbor.port} (${err})`);
+      }
+    });
+  }
 }
 
 /**********************/
@@ -171,7 +185,7 @@ function tryRegister(call, callback) {
     timestamp: Date.now()
   });
 
-  shareWaitingList();
+  shareWaitingList(neighbors);
 }
 
 //reception of a broadcasted message
@@ -186,20 +200,31 @@ function tryBroadcast(call, callback) {
     printConsole(`RECEIVED WAITING LIST : ${JSON.stringify(call.request.WaitingList)}`);
 
     call.request.WaitingList.operations.forEach(function(operation) {
-      //l'opération n'est pas dans notre liste d'attente, ni dans la blockchain
-      if((waiting_list.indexOf(operation) == -1) && (!isOperationInBlockchain(operation.id, blockchain))) {
-        waiting_list.push(operation);
+      //l'opération n'est pas dans notre liste d'attente
+      if(waiting_list.map(function(e) {return e.id;}).indexOf(operation.id) == -1) {
+          //ni dans la blockchain
+          if(!isOperationInBlockchain(operation.id, blockchain)) {
+              waiting_list.push(operation);
+          }
       }
     })
 
-    //@TODO trier les opérations
+    //tri de la file d'attente
     waiting_list.sort(function(a, b) {
       if(a.timestamp < b.timestamp) return -1;
       if(b.timestamp < a.timestamp) return 1;
       return 0;
     })
 
-    //@TODO broadcast sauf émetteur (Message avec host et port)
+    //broadcast sauf émetteur
+    let neighbors_except_sender = neighbors.filter(function(e) {
+      if((e.host == call.request.host) && (e.port == call.request.port)) {
+        return false;
+      }
+      return true;
+    });
+
+    shareWaitingList(neighbors_except_sender);
   }
 
   callback(null, {});
@@ -266,17 +291,4 @@ while (neighborsArgs.length >= 2) {
     }
     printConsole('Got blockchain\n => ' + JSON.stringify(response));
   });
-}
-
-
-function broadcast(message) {
-  for (let neighbor of neighbors) {
-    printConsole(`[BROADCAST]\t${neighbor.host}:${neighbor.port}`);
-    const client = new proto.Broadcast(`${neighbor.host}:${neighbor.port}`, grpc.credentials.createInsecure());
-    client.tryBroadcast(message, function (err, response) {
-      if (err) {
-        printConsole(`ERROR: cannot broadcast to ${neighbor.host}:${neighbor.port} (${err})`);
-      }
-    });
-  }
 }
