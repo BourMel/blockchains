@@ -17,12 +17,7 @@ const proto = grpc.load(protoPath).protocol;
 const neighbors = [];
 let blockchain = [];
 const waiting_list = [];
-
-//should be empty when launched (filled for test purposes)
-var nodeMembers = [
-  // {host: 'localhost', port: '50008', merit: 0.5},
-  // {host: 'localhost', port: '50007', merit: 0.5}
-];
+var nodeMembers = [];
 
 function printConsole(msg) {
   console.log(`[${utils.host}:${utils.port}]\t${msg}`);
@@ -81,7 +76,7 @@ function createBlock() {
 
 function displayParticipants() { //@TODO
   for(const key of Object.keys(nodeMembers)) {
-    printConsole(nodeMembers[key]);
+    printConsole(JSON.stringify(nodeMembers[key]));
   }
 }
 
@@ -96,11 +91,22 @@ function displayBlockchain(a_blockchain) {
     });
     printConsole('_______________________________________________________');
   }
-  printConsole('______________________END_BLOCKCHAIN______________________');
+  printConsole('____________________END_BLOCKCHAIN____________________');
+}
+
+function isOperationInBlockchain(operation_id, a_blockchain) {
+  for(const key of Object.keys(a_blockchain)) {
+    a_blockchain[key].operations.map(function(current) {
+      if(current.id === operation_id) return true;
+    });
+  }
+
+  return false;
 }
 
 function shareWaitingList() {
-  let waiting = new proto.WaitingList(waiting_list);
+  let waiting = new proto.WaitingList();
+  waiting.set_operations(waiting_list);
 
   broadcast({
       'type': 'WaitingList',
@@ -169,14 +175,19 @@ function tryRegister(call, callback) {
 
 //reception of a broadcasted message
 function tryBroadcast(call, callback) {
-  printConsole(`GOT MSG OF TYPE: ${call.request.type}`);
 
   if(call.request.type == 'str') {
-    printConsole(call.request.str);
+    printConsole(`GOT MSG OF TYPE: ${call.request.str}`);
   } else if(call.request.type == 'WaitingList') {
-    printConsole(JSON.stringify(call.request.WaitingList));
 
-    //@TODO traiter la liste d'attente reçue
+    printConsole(`RECEIVED WAITING LIST : ${JSON.stringify(call.request.WaitingList)}`);
+
+    call.request.WaitingList.operations.forEach(function(operation) {
+      //l'opération n'est pas dans notre liste d'attente, ni dans la blockchain
+      if((waiting_list.indexOf(operation) == -1) && (!isOperationInBlockchain(operation.id, blockchain))) {
+        waiting_list.push(operation);
+      }
+    })
   }
 
   callback(null, {});
