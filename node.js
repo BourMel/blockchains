@@ -16,7 +16,7 @@ const protoPath = `${__dirname}/messages.proto`;
 const proto = grpc.load(protoPath).protocol;
 const neighbors = [];
 let blockchain = [];
-const unsaved_op = [];
+const waiting_list = [];
 
 //should be empty when launched (filled for test purposes)
 var nodeMembers = [
@@ -67,21 +67,21 @@ function createBlock() {
       operations: []
     }
 
-    let nb_op = unsaved_op.length < MAX_OP ? unsaved_op.length : MAX_OP;
+    let nb_op = waiting_list.length < MAX_OP ? waiting_list.length : MAX_OP;
 
     for(let i=0; i<nb_op; i++) {
-      block.operations.push(unsaved_op[i]);
+      block.operations.push(waiting_list[i]);
     }
 
-    unsaved_op.splice(0, nb_op);
+    waiting_list.splice(0, nb_op);
 
     blockchain.push(block);
     displayBlockchain(blockchain);
 }
 
 function displayParticipants() { //@TODO
-  for (const key of Object.keys(nodeMembers)) {
-    printConsole(JSON.stringify(nodeMembers[key]));
+  for(const key of Object.keys(nodeMembers)) {
+    printConsole(nodeMembers[key]);
   }
 }
 
@@ -146,7 +146,7 @@ function tryRegister(call, callback) {
   displayParticipants();
   callback(null, {accepted: true});
 
-  unsaved_op.push({
+  waiting_list.push({
     id: uuidv4(),
     name: 'participant_registered',
     args: [
@@ -162,7 +162,7 @@ function tryBroadcast(call, callback) {
 }
 
 function askBlockchain(call, callback) {
-  printConsole(`got something : ${JSON.stringify(call.request)}`);
+  printConsole(`got something : ${call.request}`);
   callback(null, blockchain);
 }
 
