@@ -167,7 +167,8 @@ function tryRegister(call, callback) {
     args: [
       `${call.request.host}:${call.request.port}`, //participant
       `${utils.host}:${utils.port}` //node he registered to
-    ]
+    ],
+    timestamp: Date.now()
   });
 
   shareWaitingList();
@@ -178,6 +179,8 @@ function tryBroadcast(call, callback) {
 
   if(call.request.type == 'str') {
     printConsole(`GOT MSG OF TYPE: ${call.request.str}`);
+
+    //reception waiting list
   } else if(call.request.type == 'WaitingList') {
 
     printConsole(`RECEIVED WAITING LIST : ${JSON.stringify(call.request.WaitingList)}`);
@@ -188,6 +191,15 @@ function tryBroadcast(call, callback) {
         waiting_list.push(operation);
       }
     })
+
+    //@TODO trier les opérations
+    waiting_list.sort(function(a, b) {
+      if(a.timestamp < b.timestamp) return -1;
+      if(b.timestamp < a.timestamp) return 1;
+      return 0;
+    })
+
+    //@TODO broadcast sauf émetteur (Message avec host et port)
   }
 
   callback(null, {});

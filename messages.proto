@@ -39,6 +39,7 @@ message Reply {
 message Operation {
   string id = 1;
   string name = 2;
+  int32 timestamp = 4;
   repeated string args = 3;
 }
 
