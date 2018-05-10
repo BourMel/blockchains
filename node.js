@@ -64,6 +64,7 @@ function startServer() {
   server.addService(proto.Broadcast.service, {tryBroadcast: tryBroadcast});
   server.addService(proto.GetBlockchain.service, {askBlockchain: askBlockchain});
   server.addService(proto.GetUnicoins.service, {numberOfUnicoins: numberOfUnicoins});
+  server.addService(proto.Exchange.service, {exchange: exchange});
   server.bind('0.0.0.0:' + utils.port, grpc.ServerCredentials.createInsecure());
   server.start();
 
@@ -169,8 +170,12 @@ function isOperationInBlockchain(operation_id, a_blockchain) {
        if(current.args[0] === `${participant_host}:${participant_port}`) {
          if(current.name === RECEIVED_UNICOINS) {
            owned += parseFloat(current.args[1]);
+
+           printConsole(`${participant_port} : ${owned}`);
          } else if(current.name === GAVE_UNICOINS) {
            owned -= parseFloat(current.args[1]);
+
+           printConsole(`${participant_port} : ${owned}`);
          }
        }
      });
@@ -330,6 +335,35 @@ function askBlockchain(call, callback) {
 function numberOfUnicoins(call, callback) {
   callback(null, {
     value: ownedBy(blockchain, call.request.host, call.request.port)
+  });
+}
+
+/**
+ * Launch an exchange between two participants
+ */
+function exchange(call, callback) {
+  let accepted = true;
+
+  printConsole(JSON.stringify(call.request));
+
+  waiting_list.push({
+    id: uuidv4(),
+    name: GAVE_UNICOINS,
+    args: [
+      `${call.request.sender.host}:${call.request.sender.port}`,
+      `${call.request.unicoins.value}` ],
+    timestamp: Date.now()
+  } , {
+    id: uuidv4(),
+    name: RECEIVED_UNICOINS,
+    args: [
+      `${call.request.receiver.host}:${call.request.receiver.port}`,
+      `${call.request.unicoins.value}` ],
+    timestamp: Date.now()
+  });
+
+  callback(null, {
+    accepted: accepted
   });
 }
 

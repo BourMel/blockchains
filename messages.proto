@@ -23,6 +23,10 @@ service GetUnicoins {
   rpc numberOfUnicoins (NodeMember) returns (Unicoins) {}
 }
 
+service Exchange {
+  rpc exchange (ExchangeUnicoins) returns (Reply) {}
+}
+
 // A node tries to contact its neighbour and gives its id
 message HelloRequest {
   string host = 1;
@@ -86,6 +90,12 @@ message Depth {
 
 message Unicoins {
   float value = 1;
+}
+
+message ExchangeUnicoins {
+  Node sender = 1;
+  Node receiver = 2;
+  Unicoins unicoins = 3;
 }
 
 message Empty {}
