@@ -1,12 +1,16 @@
 "use strict";
 
-// require part
+/*************/
+/***IMPORTS***/
+/*************/
 const utils = require('./includes/utils');
 const grpc = require('grpc');
 const uuidv4 = require('uuid/v4');
 const shajs = require('sha.js');
 
-// init
+/********************/
+/***INITIALISATION***/
+/********************/
 const MAX_OP = 4;
 
 const args = process.argv.slice(2);
@@ -19,10 +23,22 @@ let blockchain = [];
 const waiting_list = [];
 var nodeMembers = [];
 
+/***************/
+/***FUNCTIONS***/
+/***************/
+
+/**
+ * Print a message in the console and add useful informations about the node
+ * @param msg = message to print
+ */
 function printConsole(msg) {
   console.log(`[${utils.host}:${utils.port}]\t${msg}`);
 }
 
+/**
+ * Add a neighbor to the node
+ * @param neighbor = neighbor to add
+ */
 function addNeighbor(neighbor) {
   if (!utils.hasObject(neighbors, neighbor)) {
     printConsole(`new neighbor: ${JSON.stringify(neighbor)}`);
@@ -30,11 +46,9 @@ function addNeighbor(neighbor) {
   }
 }
 
-/***************/
-/***FUNCTIONS***/
-/***************/
-
-// server part of the node
+/**
+ * Launch the server part of the node
+ */
 function startServer() {
   "use strict";
   printConsole('starting server...');
@@ -53,6 +67,10 @@ function startServer() {
   setInterval(createBlock, 10000);
 }
 
+/**
+ * Creates a block
+ * It contains MAX_OP operations or less and removes them from the waiting_list
+ */
 function createBlock() {
     let block = {
       creator_host: utils.host,
@@ -74,12 +92,19 @@ function createBlock() {
     displayBlockchain(blockchain);
 }
 
-function displayParticipants() { //@TODO
+/**
+ * Displays all participants of the node
+ */
+function displayParticipants() {
   for(const key of Object.keys(nodeMembers)) {
     printConsole(JSON.stringify(nodeMembers[key]));
   }
 }
 
+/**
+ * Displays a blockchain
+ * @param a_blockchain = any part of a blockchain
+ */
 function displayBlockchain(a_blockchain) {
   printConsole('______________________BLOCKCHAIN______________________');
   for(const key of Object.keys(a_blockchain)) {
@@ -94,6 +119,11 @@ function displayBlockchain(a_blockchain) {
   printConsole('____________________END_BLOCKCHAIN____________________');
 }
 
+/**
+ * Returns true if the operation is already in the blockchain
+ * @param operation_id = unique uuid of the operation to search
+ * @param a_blockchain = blockchain where we search the operation
+ */
 function isOperationInBlockchain(operation_id, a_blockchain) {
   for(const key of Object.keys(a_blockchain)) {
     a_blockchain[key].operations.map(function(current) {
@@ -104,6 +134,10 @@ function isOperationInBlockchain(operation_id, a_blockchain) {
   return false;
 }
 
+/**
+ * Broadcast the waiting_list to a list neighbors
+ * @param a_neighbors = neighbors who receive the waiting_list
+ */
 function shareWaitingList(a_neighbors) {
   let waiting = new proto.WaitingList();
   waiting.set_operations(waiting_list);
@@ -116,6 +150,11 @@ function shareWaitingList(a_neighbors) {
   }, a_neighbors);
 }
 
+/**
+ * Broadcast a message to a list of neighbors
+ * @param message = message to broadcast
+ * @param a_neighbors = neighbors who need to receive the message
+ */
 function broadcast(message, a_neighbors) {
   for (let neighbor of a_neighbors) {
     printConsole(`[BROADCAST]\t${neighbor.host}:${neighbor.port}`);
@@ -132,7 +171,9 @@ function broadcast(message, a_neighbors) {
 /***SERVER FUNCTIONS***/
 /**********************/
 
-// function used by the server to answer other nodes requests
+/**
+ * When a server receive a greeting, it adds the sending node to its neighbors
+ */
 function sayHello(call, callback) {
   addNeighbor(call.request);
   callback(null, {
@@ -141,6 +182,10 @@ function sayHello(call, callback) {
   });
 }
 
+/**
+ * When a server receive this call, it registers the participant who
+ * send it, and then adds the operation to the waiting_list
+ */
 function tryRegister(call, callback) {
   printConsole('A participant wants to register. Our participants now :');
   displayParticipants();
@@ -188,7 +233,10 @@ function tryRegister(call, callback) {
   shareWaitingList(neighbors);
 }
 
-//reception of a broadcasted message
+/**
+ * Reception of a broadcasted message, depending on its type
+ * If it's a waiting_list, take the new informations only and then order it
+ */
 function tryBroadcast(call, callback) {
 
   if(call.request.type == 'str') {
@@ -200,23 +248,23 @@ function tryBroadcast(call, callback) {
     printConsole(`RECEIVED WAITING LIST : ${JSON.stringify(call.request.WaitingList)}`);
 
     call.request.WaitingList.operations.forEach(function(operation) {
-      //l'opération n'est pas dans notre liste d'attente
+      //the operation is not in our waiting_list
       if(waiting_list.map(function(e) {return e.id;}).indexOf(operation.id) == -1) {
-          //ni dans la blockchain
+          //nor in the blockchain
           if(!isOperationInBlockchain(operation.id, blockchain)) {
               waiting_list.push(operation);
           }
       }
     })
 
-    //tri de la file d'attente
+    //order the waiting_list
     waiting_list.sort(function(a, b) {
       if(a.timestamp < b.timestamp) return -1;
       if(b.timestamp < a.timestamp) return 1;
       return 0;
     })
 
-    //broadcast sauf émetteur
+    //broadcast except sender
     let neighbors_except_sender = neighbors.filter(function(e) {
       if((e.host == call.request.host) && (e.port == call.request.port)) {
         return false;
@@ -230,6 +278,9 @@ function tryBroadcast(call, callback) {
   callback(null, {});
 }
 
+/**
+ * @TODO
+ */
 function askBlockchain(call, callback) {
   printConsole(`got something : ${call.request}`);
   callback(null, blockchain);
@@ -241,6 +292,7 @@ function askBlockchain(call, callback) {
 
 // first, run the server
 startServer();
+
 // setInterval(() => {
 //   printConsole(`neighbors: ${JSON.stringify(neighbors)}`);
 //   broadcast({

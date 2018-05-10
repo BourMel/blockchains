@@ -27,3 +27,6 @@ if(args.length == 4) {
 } else {
   console.log(`USAGE : [participant_host] [participant_port] [node_host] [node_port]`);
 }
+
+//échanges à intervalles (réguliers au début),
+//puis demander au noeud bloc combien d'argent on possède pour affichage
