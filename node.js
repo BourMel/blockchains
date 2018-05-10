@@ -185,10 +185,9 @@ function isOperationInBlockchain(operation_id, a_blockchain) {
  }
 
 /**
- * Broadcast the waiting_list to a list neighbors
- * @param a_neighbors = neighbors who receive the waiting_list
+ * Broadcast the waiting_list to all neighbors
  */
-function shareWaitingList(a_neighbors) {
+function shareWaitingList() {
   let waiting = new proto.WaitingList();
   waiting.set_operations(waiting_list);
 
@@ -281,7 +280,7 @@ function tryRegister(call, callback) {
     timestamp: Date.now()
   });
 
-  shareWaitingList(neighbors);
+  shareWaitingList();
 }
 
 /**
@@ -366,6 +365,8 @@ function exchange(call, callback) {
       `${call.request.unicoins.value}` ],
     timestamp: Date.now()
   });
+
+  shareWaitingList();
 
   callback(null, {
     accepted: accepted
