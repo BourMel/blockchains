@@ -23,7 +23,7 @@ NODEMEMBER5=$!
 node nodeMember.js localhost 1246 localhost 1234&
 NODEMEMBER6=$!
 
-sleep 20
+sleep 30
 
 kill $NODE1
 kill $NODE2

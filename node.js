@@ -70,7 +70,7 @@ function startServer() {
 
   printConsole(`server started at (${utils.host}, ${utils.port})!`);
 
-  setInterval(createBlock, 10000);
+  setInterval(createBlock, 5000);
 }
 
 /**
