@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 /*************/
 /***IMPORTS***/
@@ -17,8 +17,7 @@ const proto = grpc.load(protoPath).protocol;
 
 const args = process.argv.slice(2);
 
-if((args.length === 7) && (parseFloat(args[6]) >= 0)) {
-
+if (args.length === 7 && parseFloat(args[6]) >= 0) {
   const nodeHost = args[0];
   const nodePort = parseInt(args[1]);
 
@@ -31,46 +30,61 @@ if((args.length === 7) && (parseFloat(args[6]) >= 0)) {
   const value = parseFloat(args[6]);
 
   //check the sender has enough unicoins
-  let node = new proto.GetUnicoins(nodeHost + ':' + nodePort, grpc.credentials.createInsecure());
+  let node = new proto.GetUnicoins(
+    nodeHost + ':' + nodePort,
+    grpc.credentials.createInsecure()
+  );
 
-  node.numberOfUnicoins({host: senderHost, port: senderPort}, function(err, response) {
-
+  node.numberOfUnicoins({ host: senderHost, port: senderPort }, function(
+    err,
+    response
+  ) {
     if (err) {
       printConsole(`ERROR: ${err}`);
     } else {
-
       let ownedUnicoins = response.value;
-      let enoughUnicoins = (ownedUnicoins >= value);
+      let enoughUnicoins = ownedUnicoins >= value;
 
-      if(enoughUnicoins) {
-        printConsole(`The sender has enough UniCoins (${ownedUnicoins}). Keep going...`);
+      if (enoughUnicoins) {
+        printConsole(
+          `The sender has enough UniCoins (${ownedUnicoins}). Keep going...`
+        );
 
-        let nodeExchange = new proto.Exchange(nodeHost + ':' + nodePort, grpc.credentials.createInsecure());
+        let nodeExchange = new proto.Exchange(
+          nodeHost + ':' + nodePort,
+          grpc.credentials.createInsecure()
+        );
 
-        nodeExchange.exchange({
-          sender: {
-            host: senderHost,
-            port: senderPort
+        nodeExchange.exchange(
+          {
+            sender: {
+              host: senderHost,
+              port: senderPort,
+            },
+            receiver: {
+              host: receiverHost,
+              port: receiverPort,
+            },
+            unicoins: { value: value },
           },
-          receiver: {
-            host: receiverHost,
-            port: receiverPort
-          },
-          unicoins: {value: value}
-        }, function(err, response) {
-          if(err) printConsole(err);
+          function(err, response) {
+            if (err) printConsole(err);
 
-          if(response) printConsole(`Exchange accepted: ${response.accepted}`);
-        });
-
+            if (response)
+              printConsole(`Exchange accepted: ${response.accepted}`);
+          }
+        );
       } else {
-          printConsole(`The sender has not enough UniCoins (${ownedUnicoins}). Abort.`);
+        printConsole(
+          `The sender has not enough UniCoins (${ownedUnicoins}). Abort.`
+        );
       }
     }
   });
-
 } else {
-    printConsole(`USAGE : [node_host] [node_port] [sender_host] [sender_port] [receiver_host] [receiver_port] [unicoins_to_send]`);
+  printConsole(
+    `USAGE : [node_host] [node_port] [sender_host] [sender_port] [receiver_host] [receiver_port] [unicoins_to_send]`
+  );
 }
 
 /***************/

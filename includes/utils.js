@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 module.exports = {
   host: 'localhost',
@@ -39,4 +39,4 @@ module.exports = {
     }
     return false;
   },
-}
+};
