@@ -19,6 +19,10 @@ service GetBlockchain {
   rpc askBlockchain (Depth) returns (Blockchain) {}
 }
 
+service GetUnicoins {
+  rpc numberOfUnicoins (NodeMember) returns (Unicoins) {}
+}
+
 // A node tries to contact its neighbour and gives its id
 message HelloRequest {
   string host = 1;
@@ -78,6 +82,10 @@ message Node {
 //length asked by a node when it wants a blockchain
 message Depth {
   int32 depth = 1;
+}
+
+message Unicoins {
+  int32 value = 1;
 }
 
 message Empty {}

@@ -24,6 +24,12 @@ if(args.length == 4) {
     console.log('Registration accepted: ' + response.accepted);
   });
 
+  let nodeUni = new proto.GetUnicoins(n_host + ':' + n_port, grpc.credentials.createInsecure());
+
+  nodeUni.numberOfUnicoins({host: host, port: port}, function(err, response) {
+    console.log('Number of Unicoins owned: ' + response.value);
+  });
+
 } else {
   console.log(`USAGE : [participant_host] [participant_port] [node_host] [node_port]`);
 }

@@ -23,6 +23,10 @@ let blockchain = [];
 const waiting_list = [];
 var nodeMembers = [];
 
+const RECEIVED_UNICOINS = "received_unicoins";
+const GAVE_UNICOINS = "gave_unicoins";
+const PARTICIPANT_REGISTERED = "participant_registered";
+
 /***************/
 /***FUNCTIONS***/
 /***************/
@@ -59,6 +63,7 @@ function startServer() {
   server.addService(proto.Register.service, {tryRegister: tryRegister});
   server.addService(proto.Broadcast.service, {tryBroadcast: tryBroadcast});
   server.addService(proto.GetBlockchain.service, {askBlockchain: askBlockchain});
+  server.addService(proto.GetUnicoins.service, {numberOfUnicoins: numberOfUnicoins});
   server.bind('0.0.0.0:' + utils.port, grpc.ServerCredentials.createInsecure());
   server.start();
 
@@ -90,6 +95,18 @@ function createBlock() {
 
     blockchain.push(block);
     displayBlockchain(blockchain);
+
+    //then distribution of points depending on the participants merit
+    nodeMembers.forEach(function(member) {
+      waiting_list.push({
+        id: uuidv4(),
+        name: RECEIVED_UNICOINS,
+        args: [
+          `${member.host}:${member.port}`, //member who received unicoins
+          `${member.merit}` ], //number of unicoins received
+        timestamp: Date.now()
+      });
+    });
 }
 
 /**
@@ -123,6 +140,7 @@ function displayBlockchain(a_blockchain) {
  * Returns true if the operation is already in the blockchain
  * @param operation_id = unique uuid of the operation to search
  * @param a_blockchain = blockchain where we search the operation
+ * @return bool
  */
 function isOperationInBlockchain(operation_id, a_blockchain) {
   for(const key of Object.keys(a_blockchain)) {
@@ -133,6 +151,32 @@ function isOperationInBlockchain(operation_id, a_blockchain) {
 
   return false;
 }
+
+/**
+ * Returns the number of unicoins owned by a participant
+ * @param blockchain where to search for the information
+ * @param participant_host
+ * @param participant_port
+ * @return number of unicoins owned by the participant
+ */
+ function ownedBy(a_blockchain, participant_host, participant_port) {
+   let owned = 0;
+
+   for(const key of Object.keys(a_blockchain)) {
+     a_blockchain[key].operations.map(function(current) {
+
+       if(current.args[0] === `${participant_host}:${participant_port}`) {
+         if(current.name === RECEIVED_UNICOINS) {
+           owned += parseInt(current.args[1]);
+         } else if(current.name === GAVE_UNICOINS) {
+           owned -= parseInt(current.args[1]);
+         }
+       }
+     });
+   }
+
+   return owned;
+ }
 
 /**
  * Broadcast the waiting_list to a list neighbors
@@ -187,8 +231,7 @@ function sayHello(call, callback) {
  * send it, and then adds the operation to the waiting_list
  */
 function tryRegister(call, callback) {
-  printConsole('A participant wants to register. Our participants now :');
-  displayParticipants();
+  printConsole('A participant wants to register.');
 
   //counts participants
   var nbMembers = 0;
@@ -216,13 +259,13 @@ function tryRegister(call, callback) {
     nodeMembers[key].merit = newMerit;
   }
 
-  printConsole(`participant registered`);
+  printConsole(`participant registered:`);
   displayParticipants();
   callback(null, {accepted: true});
 
   waiting_list.push({
     id: uuidv4(),
-    name: 'participant_registered',
+    name: PARTICIPANT_REGISTERED,
     args: [
       `${call.request.host}:${call.request.port}`, //participant
       `${utils.host}:${utils.port}` //node he registered to
@@ -284,6 +327,15 @@ function tryBroadcast(call, callback) {
 function askBlockchain(call, callback) {
   printConsole(`got something : ${call.request}`);
   callback(null, blockchain);
+}
+
+/**
+ * Gives a participant the number of unicoins he owns
+ */
+function numberOfUnicoins(call, callback) {
+  callback(null, {
+    value: ownedBy(blockchain, call.request.host, call.request.port)
+  });
 }
 
 /*************/
