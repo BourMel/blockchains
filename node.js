@@ -170,12 +170,8 @@ function isOperationInBlockchain(operation_id, a_blockchain) {
        if(current.args[0] === `${participant_host}:${participant_port}`) {
          if(current.name === RECEIVED_UNICOINS) {
            owned += parseFloat(current.args[1]);
-
-           printConsole(`${participant_port} : ${owned}`);
          } else if(current.name === GAVE_UNICOINS) {
            owned -= parseFloat(current.args[1]);
-
-           printConsole(`${participant_port} : ${owned}`);
          }
        }
      });
