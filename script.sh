@@ -3,10 +3,12 @@
 node node.js localhost 1234&
 NODE1=$!
 
-sleep 5
+sleep 1
 
 node node.js localhost 1235 localhost 1234&
 NODE2=$!
+
+sleep 1
 
 node nodeMember.js localhost 1241 localhost 1234&
 NODEMEMBER1=$!
