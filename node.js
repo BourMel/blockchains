@@ -188,20 +188,22 @@ function shareWaitingList(a_neighbors) {
   waiting.set_operations(waiting_list);
 
   broadcast({
-      'host': utils.host,
-      'port': parseInt(utils.port),
-      'type': 'WaitingList',
-      'WaitingList': waiting
-  }, a_neighbors);
+    'host': utils.host,
+    'port': parseInt(utils.port),
+    'type': 'WaitingList',
+    'WaitingList': waiting
+  });
 }
 
 /**
  * Broadcast a message to a list of neighbors
  * @param message = message to broadcast
- * @param a_neighbors = neighbors who need to receive the message
  */
-function broadcast(message, a_neighbors) {
-  for (let neighbor of a_neighbors) {
+function broadcast(message) {
+  if (!message) return;
+  if (!message.id) message.id = uuidv4();
+  utils.markMessageAsTreated(message.id);
+  for (let neighbor of neighbors) {
     printConsole(`[BROADCAST]\t${neighbor.host}:${neighbor.port}`);
     const client = new proto.Broadcast(`${neighbor.host}:${neighbor.port}`, grpc.credentials.createInsecure());
     client.tryBroadcast(message, function (err, response) {
@@ -256,7 +258,7 @@ function tryRegister(call, callback) {
   };
 
   //each participant gets an equal merit
-  for(const key of Object.keys(nodeMembers)) {
+  for (const key of Object.keys(nodeMembers)) {
     nodeMembers[key].merit = newMerit;
   }
 
@@ -282,41 +284,33 @@ function tryRegister(call, callback) {
  * If it's a waiting_list, take the new informations only and then order it
  */
 function tryBroadcast(call, callback) {
+  if (utils.hasNotTreatedMessage(call.request.id)) {
+    if (call.request.type == 'str') {
+      printConsole(`GOT MSG OF TYPE: ${call.request.str}`);
 
-  if(call.request.type == 'str') {
-    printConsole(`GOT MSG OF TYPE: ${call.request.str}`);
+      //reception waiting list
+    } else if(call.request.type == 'WaitingList') {
 
-    //reception waiting list
-  } else if(call.request.type == 'WaitingList') {
+      printConsole(`RECEIVED WAITING LIST : ${JSON.stringify(call.request.WaitingList)}`);
 
-    printConsole(`RECEIVED WAITING LIST : ${JSON.stringify(call.request.WaitingList)}`);
+      call.request.WaitingList.operations.forEach(function(operation) {
+        //the operation is not in our waiting_list
+        if(waiting_list.map(function(e) {return e.id;}).indexOf(operation.id) == -1) {
+            //nor in the blockchain
+            if(!isOperationInBlockchain(operation.id, blockchain)) {
+                waiting_list.push(operation);
+            }
+        }
+      })
 
-    call.request.WaitingList.operations.forEach(function(operation) {
-      //the operation is not in our waiting_list
-      if(waiting_list.map(function(e) {return e.id;}).indexOf(operation.id) == -1) {
-          //nor in the blockchain
-          if(!isOperationInBlockchain(operation.id, blockchain)) {
-              waiting_list.push(operation);
-          }
-      }
-    })
-
-    //order the waiting_list
-    waiting_list.sort(function(a, b) {
-      if(a.timestamp < b.timestamp) return -1;
-      if(b.timestamp < a.timestamp) return 1;
-      return 0;
-    })
-
-    //broadcast except sender
-    let neighbors_except_sender = neighbors.filter(function(e) {
-      if((e.host == call.request.host) && (e.port == call.request.port)) {
-        return false;
-      }
-      return true;
-    });
-
-    shareWaitingList(neighbors_except_sender);
+      // order the waiting_list
+      waiting_list.sort(function(a, b) {
+        if(a.timestamp < b.timestamp) return -1;
+        if(b.timestamp < a.timestamp) return 1;
+        return 0;
+      });
+    }
+    broadcast(call.request);
   }
 
   callback(null, {});
@@ -364,9 +358,9 @@ while (neighborsArgs.length >= 2) {
   const client = new proto.Hello(`${neighborHost}:${neighborPort}`, grpc.credentials.createInsecure());
   printConsole(`Asking node's location (${neighborHost}:${neighborPort})`);
   client.sayHello({
-    'host': utils.host,
-    'port': parseInt(utils.port)
-  }, function(err, response) {
+    host: utils.host,
+    port: parseInt(utils.port)
+  }, (err, response) => {
     if (err) {
       printConsole(`ERROR: cannot add ${neighborHost}:${neighborPort} as neighbor.`);
       return;
@@ -384,7 +378,7 @@ while (neighborsArgs.length >= 2) {
   printConsole(`Asking node's blockchain (${neighborHost}:${neighborPort})`);
   askBlockchains.askBlockchain({
     depth: 1
-  }, function (err, response) {
+  }, (err, response) => {
     if (err) {
       printConsole(err);
       printConsole(`ERROR: cannot get ${neighborHost}:${neighborPort}'s  blockchain.`);

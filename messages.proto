@@ -92,11 +92,12 @@ message Empty {}
 
 // for broadcasting, ...
 message Message {
-  string type = 1;
-  string host = 2;
-  int32 port = 3;
+  string id = 1;
+  string type = 2;
+  string host = 3;
+  int32 port = 4;
   oneof msg {
-    string str = 4;
-    WaitingList WaitingList = 5;
+    // string str = 5;
+    WaitingList WaitingList = 6;
   }
 }
