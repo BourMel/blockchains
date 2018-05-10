@@ -290,31 +290,36 @@ function tryRegister(call, callback) {
  */
 function tryBroadcast(call, callback) {
   if (utils.hasNotTreatedMessage(call.request.id)) {
-    if (call.request.type == 'str') {
-      printConsole(`GOT MSG OF TYPE: ${call.request.str}`);
+    switch (call.request.type) {
+      case 'text':
+        printConsole(`GOT TEXT: ${call.request.text.str}`);
+        break;
 
-      //reception waiting list
-    } else if(call.request.type == 'WaitingList') {
+      case 'WaitingList':
+        printConsole(`RECEIVED WAITING LIST : ${JSON.stringify(call.request.WaitingList)}`);
 
-      printConsole(`RECEIVED WAITING LIST : ${JSON.stringify(call.request.WaitingList)}`);
-
-      call.request.WaitingList.operations.forEach(function(operation) {
-        //the operation is not in our waiting_list
-        if(waiting_list.map(function(e) {return e.id;}).indexOf(operation.id) == -1) {
+        call.request.WaitingList.operations.forEach(function (operation) {
+          //the operation is not in our waiting_list
+          if (waiting_list.map(function (e) { return e.id; }).indexOf(operation.id) == -1) {
             //nor in the blockchain
-            if(!isOperationInBlockchain(operation.id, blockchain)) {
-                waiting_list.push(operation);
+            if (!isOperationInBlockchain(operation.id, blockchain)) {
+              waiting_list.push(operation);
             }
-        }
-      })
+          }
+        });
 
-      // order the waiting_list
-      waiting_list.sort(function(a, b) {
-        if(a.timestamp < b.timestamp) return -1;
-        if(b.timestamp < a.timestamp) return 1;
-        return 0;
-      });
+        // order the local waiting_list
+        waiting_list.sort(function (a, b) {
+          if (a.timestamp < b.timestamp) return -1;
+          if (b.timestamp < a.timestamp) return 1;
+          return 0;
+        });
+        break;
+
+      default:
+        break;
     }
+
     broadcast(call.request);
   }
 
@@ -377,8 +382,10 @@ startServer();
 // setInterval(() => {
 //   printConsole(`neighbors: ${JSON.stringify(neighbors)}`);
 //   broadcast({
-//     'type': 'str',
-//     'str': 'this is a test!!'
+//     'type': 'text',
+//     'text': {
+//           str: 'this is a test!!',
+//         }
 //   });
 // }, 2000);
 

@@ -100,6 +100,10 @@ message ExchangeUnicoins {
 
 message Empty {}
 
+message Text {
+  string str = 1;
+}
+
 // for broadcasting, ...
 message Message {
   string id = 1;
@@ -107,7 +111,7 @@ message Message {
   string host = 3;
   int32 port = 4;
   oneof msg {
-    // string str = 5;
+    Text text = 5;
     WaitingList WaitingList = 6;
   }
 }
