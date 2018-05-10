@@ -130,6 +130,7 @@ function displayBlockchain(a_blockchain) {
     printConsole('  depth: ' + a_blockchain[key].depth + ' | operations :');
     a_blockchain[key].operations.map(function(current) {
       printConsole('[ ' + current.id + ' | ' + current.name + ' ]');
+      printConsole('args: ' + current.args);
     });
     printConsole('_______________________________________________________');
   }
@@ -167,9 +168,9 @@ function isOperationInBlockchain(operation_id, a_blockchain) {
 
        if(current.args[0] === `${participant_host}:${participant_port}`) {
          if(current.name === RECEIVED_UNICOINS) {
-           owned += parseInt(current.args[1]);
+           owned += parseFloat(current.args[1]);
          } else if(current.name === GAVE_UNICOINS) {
-           owned -= parseInt(current.args[1]);
+           owned -= parseFloat(current.args[1]);
          }
        }
      });

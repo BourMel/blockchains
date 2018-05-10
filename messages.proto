@@ -85,7 +85,7 @@ message Depth {
 }
 
 message Unicoins {
-  int32 value = 1;
+  float value = 1;
 }
 
 message Empty {}
