@@ -61,7 +61,7 @@ function askUnicoins(n_host, n_port, host, port) {
   );
 
   nodeUni.numberOfUnicoins({ host: host, port: port }, function(err, response) {
-    console.log('Number of Unicoins owned: ' + response.value);
+    console.log('Number of Unicoins owned: ' + response.value.toFixed(2) + ' 🦄');
   });
 }
 

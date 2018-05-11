@@ -11,7 +11,7 @@ const shajs = require('sha.js');
 /********************/
 /***INITIALISATION***/
 /********************/
-const MAX_OP = 4;
+const MAX_OP = 42;
 
 const args = process.argv.slice(2);
 utils.initHostPort(args);
@@ -131,7 +131,9 @@ function displayParticipants() {
  * @param a_blockchain any part of a blockchain
  */
 function displayBlockchain(a_blockchain) {
-  printConsole('______________________BLOCKCHAIN______________________');
+  printConsole(
+    '┌───────────────────────── [BLOCKCHAIN] ─────────────────────────┐'
+  );
   for (const key of Object.keys(a_blockchain)) {
     printConsole(
       '[ creator:' +
@@ -139,15 +141,19 @@ function displayBlockchain(a_blockchain) {
         ':' +
         a_blockchain[key].creator_port
     );
-    printConsole('  hash: ' + a_blockchain[key].hash);
+    printConsole('  #' + a_blockchain[key].hash);
     printConsole('  depth: ' + a_blockchain[key].depth + ' | operations :');
     a_blockchain[key].operations.map(function(current) {
       printConsole('[ ' + current.id + ' | ' + current.name + ' ]');
       printConsole('args: ' + current.args);
     });
-    printConsole('_______________________________________________________');
+    printConsole(
+      '├────────────────────────────────────────────────────────────────┤'
+    );
   }
-  printConsole('____________________END_BLOCKCHAIN____________________');
+  printConsole(
+    '└────────────────────────────────────────────────────────────────┘'
+  );
 }
 
 /**
@@ -353,7 +359,7 @@ function tryBroadcast(call, callback) {
  * Gives a node all blocks having depth >= call.request.depth
  */
 function askBlockchain(call, callback) {
-  printConsole(`got something : ${JSON.stringify(call.request)}`);
+  printConsole(`asked blockchain with depth= ${call.request.depth}`);
 
   const blockchainToSend = blockchain.filter(
     b => b.depth >= call.request.depth
