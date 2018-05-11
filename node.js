@@ -350,11 +350,16 @@ function tryBroadcast(call, callback) {
 }
 
 /**
- * @TODO
+ * Gives a node all blocks having depth >= call.request.depth
  */
 function askBlockchain(call, callback) {
-  printConsole(`got something : ${call.request}`);
-  callback(null, blockchain);
+  printConsole(`got something : ${JSON.stringify(call.request)}`);
+
+  const blockchainToSend = blockchain.filter(
+    b => b.depth >= call.request.depth
+  );
+
+  callback(null, blockchainToSend);
 }
 
 /**

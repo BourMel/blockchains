@@ -93,7 +93,7 @@ if (args.length === 7 && parseFloat(args[6]) >= 0) {
 
 /**
  * Print a message in the console and add useful informations about the node
- * @param msg = message to print
+ * @param msg message to print
  */
 function printConsole(msg) {
   console.log(`[${utils.host}:${utils.port}]\t${msg}`);
