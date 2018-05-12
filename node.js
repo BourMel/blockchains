@@ -82,11 +82,13 @@ function startServer() {
  * It contains MAX_OP operations or less and removes them from the waiting_list
  */
 function createBlock() {
+  let blockToHash =
+    blockchain.length === 0 ? [] : blockchain[blockchain.length - 1];
   let block = {
     creator_host: utils.host,
     creator_port: parseInt(utils.port),
     hash: shajs('sha256')
-      .update(JSON.stringify(blockchain))
+      .update(JSON.stringify(blockToHash))
       .digest('hex'),
     depth: blockchain.length + 1,
     operations: [],
@@ -371,7 +373,50 @@ function tryBroadcast(call, callback) {
 
       case 'block':
         printConsole(`RECEIVED BLOCK: ${JSON.stringify(call.request.block)}`);
-        blockchain.push(call.request.block);
+        if (call.request.block.depth > blockchain.length + 1) {
+          const askBlockchains = new proto.GetBlockchain(
+            `${call.request.host}:${call.request.port}`,
+            grpc.credentials.createInsecure()
+          );
+          printConsole(
+            `Asking node's blockchain (${call.request.host}:${
+              call.request.port
+            })`
+          );
+          askBlockchains.askBlockchain(
+            {
+              depth: blockchain.length,
+            },
+            (err, response) => {
+              if (err) {
+                printConsole(err);
+                printConsole(
+                  `ERROR: cannot get ${call.request.host}:${
+                    call.request.port
+                  }'s  blockchain.`
+                );
+                return;
+              } else {
+                const res = response.block;
+                if (res[0].depth === blockchain.length) {
+                  if (res[0].hash === blockchain.slice(-1)[0].hash) {
+                    for (let i = 1; i < res.length; i++) {
+                      blockchain.push(res[i]);
+                    }
+                  } else {
+                    // @TODO: if bad hash, remove all op and take the others
+                  }
+                }
+              }
+            }
+          );
+        } else if (call.request.block.depth < blockchain.length) {
+          // just ignore that block
+        } else {
+          // is equal
+          // @TODO: verify hash
+          blockchain.push(call.request.block);
+        }
         break;
 
       default:
