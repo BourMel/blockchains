@@ -28,7 +28,7 @@ sleep 25
 node exchange.js localhost 1234 localhost 1241 localhost 1242 0.1
 node exchange.js localhost 1235 localhost 1243 localhost 1244 0.1
 
-node node.js localhost 1236 localhost 1234&
+node node.js localhost 1236 localhost 1234 localhost 1235&
 NODE3=$!
 
 

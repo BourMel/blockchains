@@ -47,7 +47,9 @@ if (args.length === 7 && parseFloat(args[6]) >= 0) {
 
       if (enoughUnicoins) {
         printConsole(
-          `The sender has enough UniCoins (${ownedUnicoins.toFixed(2)}). Keep going...`
+          `The sender has enough UniCoins (${ownedUnicoins.toFixed(
+            2
+          )}). Keep going...`
         );
 
         let nodeExchange = new proto.Exchange(
@@ -76,7 +78,9 @@ if (args.length === 7 && parseFloat(args[6]) >= 0) {
         );
       } else {
         printConsole(
-          `The sender has not enough UniCoins (${ownedUnicoins.toFixed(2)}). Abort.`
+          `The sender has not enough UniCoins (${ownedUnicoins.toFixed(
+            2
+          )}). Abort.`
         );
       }
     }

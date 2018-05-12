@@ -132,27 +132,37 @@ function displayParticipants() {
  */
 function displayBlockchain(a_blockchain) {
   printConsole(
-    '┌───────────────────────── [BLOCKCHAIN] ─────────────────────────┐'
+    '┌─────────────────────────── [BLOCKCHAIN] ───────────────────────────┐'
   );
   for (const key of Object.keys(a_blockchain)) {
+    let blockCreator = `${a_blockchain[key].creator_host}:${
+      a_blockchain[key].creator_port
+    }`;
+    printConsole(`│ #${a_blockchain[key].hash}  │`);
     printConsole(
-      '[ creator:' +
-        a_blockchain[key].creator_host +
-        ':' +
-        a_blockchain[key].creator_port
+      `│ FROM: ${blockCreator} \t\t\t\t DEPTH: ${
+        a_blockchain[key].depth
+      }  \t     │`
     );
-    printConsole('  #' + a_blockchain[key].hash);
-    printConsole('  depth: ' + a_blockchain[key].depth + ' | operations :');
-    a_blockchain[key].operations.map(function(current) {
-      printConsole('[ ' + current.id + ' | ' + current.name + ' ]');
-      printConsole('args: ' + current.args);
+    printConsole(
+      '│ OPERATIONS:                                                        │'
+    );
+    a_blockchain[key].operations.map(op => {
+      printConsole(`│ \t - #${op.id} \t\t     │`);
+      let opName = `│ \t       - type: ${op.name} `;
+      let opArgs = `│ \t       - args: ${op.args} `;
+      printConsole(`${opName + ' '.repeat(64 - opName.length)}│`);
+      printConsole(`${opArgs + ' '.repeat(64 - opArgs.length)}│`);
     });
     printConsole(
-      '├────────────────────────────────────────────────────────────────┤'
+      '├────────────────────────────────────────────────────────────────────┤'
     );
   }
   printConsole(
-    '└────────────────────────────────────────────────────────────────┘'
+    '│                           END BLOCKCHAIN                           │'
+  );
+  printConsole(
+    '└────────────────────────────────────────────────────────────────────┘'
   );
 }
 
@@ -460,9 +470,10 @@ while (neighborsArgs.length >= 2) {
       printConsole(`other node location: (${response.host}:${response.port})`);
     }
   );
-  printConsole('call ended');
+
   neighborsArgs = neighborsArgs.slice(2);
 
+  // now asks for the neighbor's blockchain
   const askBlockchains = new proto.GetBlockchain(
     `${neighborHost}:${neighborPort}`,
     grpc.credentials.createInsecure()
