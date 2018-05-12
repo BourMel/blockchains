@@ -103,17 +103,31 @@ function createBlock() {
   blockchain.push(block);
   displayBlockchain(blockchain);
 
-  //then distribution of points depending on the participants merit
+  // then distribution of points depending on the participants merit
   nodeMembers.forEach(function(member) {
     waiting_list.push({
       id: uuidv4(),
       name: RECEIVED_UNICOINS,
       args: [
-        `${member.host}:${member.port}`, //member who received unicoins
+        `${member.host}:${member.port}`, // member who received unicoins
         `${member.merit}`,
-      ], //number of unicoins received
+      ], // number of unicoins received
       timestamp: Date.now(),
     });
+  });
+
+  let blockToBroadcast = new proto.Block();
+  blockToBroadcast.set_hash(block.hash);
+  blockToBroadcast.set_depth(block.depth);
+  blockToBroadcast.set_operations(block.operations);
+  blockToBroadcast.set_creator_host(block.creator_host);
+  blockToBroadcast.set_creator_port(block.creator_port);
+
+  broadcast({
+    host: utils.host,
+    port: parseInt(utils.port),
+    type: 'block',
+    block: blockToBroadcast,
   });
 }
 
@@ -217,8 +231,8 @@ function shareWaitingList() {
   broadcast({
     host: utils.host,
     port: parseInt(utils.port),
-    type: 'WaitingList',
-    WaitingList: waiting,
+    type: 'waiting_list',
+    waiting_list: waiting,
   });
 }
 
@@ -326,12 +340,12 @@ function tryBroadcast(call, callback) {
         printConsole(`GOT TEXT: ${call.request.text.str}`);
         break;
 
-      case 'WaitingList':
+      case 'waiting_list':
         printConsole(
-          `RECEIVED WAITING LIST: ${JSON.stringify(call.request.WaitingList)}`
+          `RECEIVED WAITING LIST: ${JSON.stringify(call.request.waiting_list)}`
         );
 
-        call.request.WaitingList.operations.forEach(function(operation) {
+        call.request.waiting_list.operations.forEach(function(operation) {
           //the operation is not in our waiting_list
           if (
             waiting_list
@@ -353,6 +367,11 @@ function tryBroadcast(call, callback) {
           if (b.timestamp < a.timestamp) return 1;
           return 0;
         });
+        break;
+
+      case 'block':
+        printConsole(`RECEIVED BLOCK: ${JSON.stringify(call.request.block)}`);
+        blockchain.push(call.request.block);
         break;
 
       default:

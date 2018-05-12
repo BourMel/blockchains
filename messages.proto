@@ -112,6 +112,7 @@ message Message {
   int32 port = 4;
   oneof msg {
     Text text = 5;
-    WaitingList WaitingList = 6;
+    WaitingList waiting_list = 6;
+    Block block = 7;
   }
 }
