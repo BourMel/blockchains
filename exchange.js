@@ -6,7 +6,6 @@
 const utils = require('./includes/utils');
 const grpc = require('grpc');
 const uuidv4 = require('uuid/v4');
-const shajs = require('sha.js');
 
 /********************/
 /***INITIALISATION***/

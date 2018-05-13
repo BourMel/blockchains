@@ -6,7 +6,7 @@
 const utils = require('./includes/utils');
 const grpc = require('grpc');
 const uuidv4 = require('uuid/v4');
-const shajs = require('sha.js');
+const crypto = require('crypto');
 
 /********************/
 /***INITIALISATION***/
@@ -77,6 +77,35 @@ function startServer() {
   setInterval(createBlock, 5000);
 }
 
+function generateHash() {
+  let blockToHash = blockchain.slice(-1)[0];
+  if (!blockToHash)
+    blockToHash = {
+      creator_host: 'creator_host',
+      creator_port: 0,
+      hash: 'hash',
+      depth: 0,
+      operations: [],
+    };
+
+  let blockHash = crypto
+    .createHash('sha256')
+    .update(blockToHash.creator_host)
+    .update(Uint32Array.from([blockToHash.creator_port]))
+    .update(blockToHash.hash)
+    .update(Uint32Array.from([blockToHash.depth]));
+
+  for (const op of blockToHash.operations) {
+    blockHash.update(op.id);
+    for (let i = 0; i < op.args.length; i++) {
+      blockHash.update('' + op.args[i]);
+    }
+    blockHash.update('' + op.timestamp);
+  }
+
+  return blockHash.digest('hex');
+}
+
 /**
  * Creates a block
  * It contains MAX_OP operations or less and removes them from the waiting_list
@@ -86,14 +115,10 @@ function createBlock() {
     o => !isOperationInBlockchain(o.id, blockchain)
   );
 
-  let blockToHash = blockchain.slice(-1)[0];
-  if (!blockToHash) blockToHash = [];
   let block = {
     creator_host: utils.host,
     creator_port: parseInt(utils.port),
-    hash: shajs('sha256')
-      .update(JSON.stringify(blockToHash))
-      .digest('hex'),
+    hash: generateHash(),
     depth: blockchain.length + 1,
     operations: [],
   };
@@ -439,14 +464,10 @@ function tryBroadcast(call, callback) {
 
 function verifyHash(block) {
   if (block.depth === blockchain.length + 1) {
-
-    let blockToHash = blockchain.slice(-1)[0];
-    if (!blockToHash) blockToHash = [];
-    let blockHash = shajs('sha256')
-        .update(JSON.stringify(blockToHash))
-        .digest('hex');
+    let blockHash = generateHash();
+    printConsole('HASH=' + blockHash + ', got ' + block.hash);
     // if (blockHash === block.hash) {
-      blockchain.push(block);
+    blockchain.push(block);
     // }
   }
 }
