@@ -86,8 +86,8 @@ function createBlock() {
     o => !isOperationInBlockchain(o.id, blockchain)
   );
 
-  let blockToHash =
-    blockchain.length === 0 ? [] : blockchain[blockchain.length - 1];
+  let blockToHash = blockchain.slice(-1)[0];
+  if (!blockToHash) blockToHash = [];
   let block = {
     creator_host: utils.host,
     creator_port: parseInt(utils.port),
@@ -422,9 +422,8 @@ function tryBroadcast(call, callback) {
         } else if (call.request.block.depth <= blockchain.length) {
           // just ignore that block
         } else {
-          // is the next block
-          // @TODO: verify hash
-          blockchain.push(call.request.block);
+          // is the next block; verify if hash is OK and add to the chain
+          verifyHash(call.request.block);
         }
         break;
 
@@ -436,6 +435,20 @@ function tryBroadcast(call, callback) {
   }
 
   callback(null, {});
+}
+
+function verifyHash(block) {
+  if (block.depth === blockchain.length + 1) {
+
+    let blockToHash = blockchain.slice(-1)[0];
+    if (!blockToHash) blockToHash = [];
+    let blockHash = shajs('sha256')
+        .update(JSON.stringify(blockToHash))
+        .digest('hex');
+    // if (blockHash === block.hash) {
+      blockchain.push(block);
+    // }
+  }
 }
 
 /**

@@ -20,7 +20,7 @@ node nodeMember.js localhost 1244 localhost 1234&
 NODEMEMBER4=$!
 node nodeMember.js localhost 1245 localhost 1234&
 NODEMEMBER5=$!
-node nodeMember.js localhost 1246 localhost 1234&
+node nodeMember.js localhost 1246 localhost 1235&
 NODEMEMBER6=$!
 
 sleep 25
