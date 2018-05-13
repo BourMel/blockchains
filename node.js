@@ -20,8 +20,8 @@ const protoPath = `${__dirname}/messages.proto`;
 const proto = grpc.load(protoPath).protocol;
 const neighbors = [];
 let blockchain = [];
-const waiting_list = [];
-var nodeMembers = [];
+let waiting_list = [];
+let nodeMembers = [];
 
 const RECEIVED_UNICOINS = 'received_unicoins';
 const GAVE_UNICOINS = 'gave_unicoins';
@@ -82,6 +82,10 @@ function startServer() {
  * It contains MAX_OP operations or less and removes them from the waiting_list
  */
 function createBlock() {
+  waiting_list = waiting_list.filter(
+    o => !isOperationInBlockchain(o.id, blockchain)
+  );
+
   let blockToHash =
     blockchain.length === 0 ? [] : blockchain[blockchain.length - 1];
   let block = {
@@ -117,6 +121,8 @@ function createBlock() {
       timestamp: Date.now(),
     });
   });
+
+  shareWaitingList();
 
   let blockToBroadcast = new proto.Block();
   blockToBroadcast.set_hash(block.hash);
@@ -189,10 +195,11 @@ function displayBlockchain(a_blockchain) {
  * @return bool
  */
 function isOperationInBlockchain(operation_id, a_blockchain) {
-  for (const key of Object.keys(a_blockchain)) {
-    a_blockchain[key].operations.map(function(current) {
-      if (current.id === operation_id) return true;
-    });
+  for (let i = 0; i < a_blockchain.length; i++) {
+    const b = a_blockchain[i];
+    for (let j = 0; j < b.operations.length; j++) {
+      if (b.operations[j].id == operation_id) return true;
+    }
   }
 
   return false;
