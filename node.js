@@ -286,7 +286,7 @@ function sayHello(call, callback) {
 function tryRegister(call, callback) {
   printConsole('A participant wants to register.');
 
-  //counts participants
+  // counts participants
   var nbMembers = 0;
   for (const key of Object.keys(nodeMembers)) {
     nbMembers++;
@@ -309,7 +309,7 @@ function tryRegister(call, callback) {
     merit: newMerit,
   };
 
-  //each participant gets an equal merit
+  // each participant gets an equal merit
   for (const key of Object.keys(nodeMembers)) {
     nodeMembers[key].merit = newMerit;
   }
@@ -322,8 +322,8 @@ function tryRegister(call, callback) {
     id: uuidv4(),
     name: PARTICIPANT_REGISTERED,
     args: [
-      `${call.request.host}:${call.request.port}`, //participant
-      `${utils.host}:${utils.port}`, //node he registered to
+      `${call.request.host}:${call.request.port}`, // participant
+      `${utils.host}:${utils.port}`, // node he registered to
     ],
     timestamp: Date.now(),
   });
@@ -348,7 +348,7 @@ function tryBroadcast(call, callback) {
         );
 
         call.request.waiting_list.operations.forEach(function(operation) {
-          //the operation is not in our waiting_list
+          // the operation is not in our waiting_list
           if (
             waiting_list
               .map(function(e) {
@@ -356,7 +356,7 @@ function tryBroadcast(call, callback) {
               })
               .indexOf(operation.id) == -1
           ) {
-            //nor in the blockchain
+            // nor in the blockchain
             if (!isOperationInBlockchain(operation.id, blockchain)) {
               waiting_list.push(operation);
             }
@@ -373,6 +373,8 @@ function tryBroadcast(call, callback) {
 
       case 'block':
         printConsole(`RECEIVED BLOCK: ${JSON.stringify(call.request.block)}`);
+
+        // in case the received block is too far in the future
         if (call.request.block.depth > blockchain.length + 1) {
           const askBlockchains = new proto.GetBlockchain(
             `${call.request.host}:${call.request.port}`,
@@ -410,10 +412,10 @@ function tryBroadcast(call, callback) {
               }
             }
           );
-        } else if (call.request.block.depth < blockchain.length) {
+        } else if (call.request.block.depth <= blockchain.length) {
           // just ignore that block
         } else {
-          // is equal
+          // is the next block
           // @TODO: verify hash
           blockchain.push(call.request.block);
         }
