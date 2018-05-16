@@ -81,25 +81,25 @@ function startServer() {
   setInterval(createBlock, 5000);
 }
 
-function generateHash() {
-  let blockToHash = blockchain.slice(-1)[0];
-  if (!blockToHash)
-    blockToHash = {
+function hashBlock(block) {
+  if (!block) {
+    block = {
       creator_host: 'creator_host',
       creator_port: 0,
       hash: 'hash',
       depth: 0,
       operations: [],
     };
+  }
 
   let blockHash = crypto
     .createHash('sha256')
-    .update(blockToHash.creator_host)
-    .update(Uint32Array.from([blockToHash.creator_port]))
-    .update(blockToHash.hash)
-    .update(Uint32Array.from([blockToHash.depth]));
+    .update(block.creator_host)
+    .update(Uint32Array.from([block.creator_port]))
+    .update(block.hash)
+    .update(Uint32Array.from([block.depth]));
 
-  for (const op of blockToHash.operations) {
+  for (const op of block.operations) {
     blockHash.update(op.id);
     for (let i = 0; i < op.args.length; i++) {
       blockHash.update('' + op.args[i]);
@@ -108,6 +108,13 @@ function generateHash() {
   }
 
   return blockHash.digest('hex');
+}
+module.exports = {
+  hashBlock
+};
+
+function generateHash() {
+  return hashBlock(blockchain.slice(-1)[0]);
 }
 
 /**
@@ -477,9 +484,9 @@ function verifyHash(block) {
   if (block.depth === blockchain.length + 1) {
     let blockHash = generateHash();
     printConsole('HASH=' + blockHash + ', got ' + block.hash);
-    // if (blockHash === block.hash) {
+    if (blockHash === block.hash) {
       blockchain.push(block);
-    // }
+    }
   }
 }
 
