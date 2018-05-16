@@ -3,6 +3,7 @@
 /*************/
 /***IMPORTS***/
 /*************/
+const config = require('./includes/config');
 const utils = require('./includes/utils');
 const grpc = require('grpc');
 const uuidv4 = require('uuid/v4');
@@ -34,9 +35,12 @@ const PARTICIPANT_REGISTERED = 'participant_registered';
 /**
  * Print a message in the console and add useful informations about the node
  * @param msg message to print
+ * @param show need to print or not the message
  */
-function printConsole(msg) {
-  console.log(`[${utils.host}:${utils.port}]\t${msg}`);
+function printConsole(msg, show) {
+  if (config.debug || show !== false) {
+    console.log(`[${utils.host}:${utils.port}]\t${msg}`);
+  }
 }
 
 /**
@@ -178,9 +182,10 @@ function displayParticipants() {
  * @param a_blockchain any part of a blockchain
  */
 function displayBlockchain(a_blockchain) {
+  if (!config.debug && !config.display.blockchain) return;
+
   printConsole(
-    '┌─────────────────────────── [BLOCKCHAIN] ───────────────────────────┐'
-  );
+    '┌─────────────────────────── [BLOCKCHAIN] ───────────────────────────┐'  );
   for (const key of Object.keys(a_blockchain)) {
     let blockCreator = `${a_blockchain[key].creator_host}:${
       a_blockchain[key].creator_port
@@ -279,7 +284,7 @@ function broadcast(message) {
   if (!message.id) message.id = uuidv4();
   utils.markMessageAsTreated(message.id);
   for (let neighbor of neighbors) {
-    printConsole(`[BROADCAST]\t${neighbor.host}:${neighbor.port}`);
+    printConsole(`[BROADCAST]\t${neighbor.host}:${neighbor.port}`, config.display.broadcastEvents);
     const client = new proto.Broadcast(
       `${neighbor.host}:${neighbor.port}`,
       grpc.credentials.createInsecure()
@@ -375,8 +380,10 @@ function tryBroadcast(call, callback) {
         break;
 
       case 'waiting_list':
+        let rwl_txt = 'RECEIVED WAITING LIST';
+        if (config.display.receivedWaitingListDetails) rwl_txt += `: ${JSON.stringify(call.request.waiting_list)}`;
         printConsole(
-          `RECEIVED WAITING LIST: ${JSON.stringify(call.request.waiting_list)}`
+          rwl_txt, config.display.receivedWaitingList
         );
 
         call.request.waiting_list.operations.forEach(function(operation) {
@@ -404,7 +411,11 @@ function tryBroadcast(call, callback) {
         break;
 
       case 'block':
-        printConsole(`RECEIVED BLOCK: ${JSON.stringify(call.request.block)}`);
+        let b_txt = 'RECEIVED BLOCK';
+        if (config.display.receivedBlockDetails) b_txt += `: ${JSON.stringify(call.request.block)}`;
+        printConsole(
+          b_txt, config.display.receivedBlock
+        );
 
         // in case the received block is too far in the future
         if (call.request.block.depth > blockchain.length + 1) {
@@ -467,7 +478,7 @@ function verifyHash(block) {
     let blockHash = generateHash();
     printConsole('HASH=' + blockHash + ', got ' + block.hash);
     // if (blockHash === block.hash) {
-    blockchain.push(block);
+      blockchain.push(block);
     // }
   }
 }
@@ -602,7 +613,7 @@ while (neighborsArgs.length >= 2) {
       if (res.length > blockchain.length) {
         blockchain = res;
       }
-      printConsole('Got blockchain\n => ' + JSON.stringify(response));
+      printConsole(`Got blockchain\n =>  ${JSON.stringify(response)}`, config.display.gotBlockchain);
     }
   );
 }
