@@ -1,7 +1,7 @@
 'use strict';
 
 module.exports = {
-  debug: false, // if set to 'true' display all
+  debug: true, // if set to 'true' display all
   display: {
     blockchain: true,
     gotBlockchain: false,
@@ -10,5 +10,6 @@ module.exports = {
     receivedWaitingListDetails: false,
     receivedBlock: true,
     receivedBlockDetails: false,
-  }
+    hashVerifications: false,
+  },
 };

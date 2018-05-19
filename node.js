@@ -81,7 +81,12 @@ function startServer() {
   setInterval(createBlock, 5000);
 }
 
+/**
+ * Hashes the block passed in argument
+ * @param block block to hash
+ */
 function hashBlock(block) {
+  // in case there was no block to hash, it may say that the blockchain is empty
   if (!block) {
     block = {
       creator_host: 'creator_host',
@@ -92,6 +97,7 @@ function hashBlock(block) {
     };
   }
 
+  // from now, just hash all items of the block in a specific order
   let blockHash = crypto
     .createHash('sha256')
     .update(block.creator_host)
@@ -109,10 +115,10 @@ function hashBlock(block) {
 
   return blockHash.digest('hex');
 }
-module.exports = {
-  hashBlock
-};
 
+/**
+ * Hashes the last block of the current blockchain
+ */
 function generateHash() {
   return hashBlock(blockchain.slice(-1)[0]);
 }
@@ -192,7 +198,8 @@ function displayBlockchain(a_blockchain) {
   if (!config.debug && !config.display.blockchain) return;
 
   printConsole(
-    '┌─────────────────────────── [BLOCKCHAIN] ───────────────────────────┐'  );
+    '┌─────────────────────────── [BLOCKCHAIN] ───────────────────────────┐'
+  );
   for (const key of Object.keys(a_blockchain)) {
     let blockCreator = `${a_blockchain[key].creator_host}:${
       a_blockchain[key].creator_port
@@ -291,7 +298,10 @@ function broadcast(message) {
   if (!message.id) message.id = uuidv4();
   utils.markMessageAsTreated(message.id);
   for (let neighbor of neighbors) {
-    printConsole(`[BROADCAST]\t${neighbor.host}:${neighbor.port}`, config.display.broadcastEvents);
+    printConsole(
+      `[BROADCAST]\t${neighbor.host}:${neighbor.port}`,
+      config.display.broadcastEvents
+    );
     const client = new proto.Broadcast(
       `${neighbor.host}:${neighbor.port}`,
       grpc.credentials.createInsecure()
@@ -388,10 +398,9 @@ function tryBroadcast(call, callback) {
 
       case 'waiting_list':
         let rwl_txt = 'RECEIVED WAITING LIST';
-        if (config.display.receivedWaitingListDetails) rwl_txt += `: ${JSON.stringify(call.request.waiting_list)}`;
-        printConsole(
-          rwl_txt, config.display.receivedWaitingList
-        );
+        if (config.display.receivedWaitingListDetails)
+          rwl_txt += `: ${JSON.stringify(call.request.waiting_list)}`;
+        printConsole(rwl_txt, config.display.receivedWaitingList);
 
         call.request.waiting_list.operations.forEach(function(operation) {
           // the operation is not in our waiting_list
@@ -419,10 +428,9 @@ function tryBroadcast(call, callback) {
 
       case 'block':
         let b_txt = 'RECEIVED BLOCK';
-        if (config.display.receivedBlockDetails) b_txt += `: ${JSON.stringify(call.request.block)}`;
-        printConsole(
-          b_txt, config.display.receivedBlock
-        );
+        if (config.display.receivedBlockDetails)
+          b_txt += `: ${JSON.stringify(call.request.block)}`;
+        printConsole(b_txt, config.display.receivedBlock);
 
         // in case the received block is too far in the future
         if (call.request.block.depth > blockchain.length + 1) {
@@ -480,10 +488,17 @@ function tryBroadcast(call, callback) {
   callback(null, {});
 }
 
+/**
+ * Verify the deep and the hash of a block
+ * @param block block to verify
+ */
 function verifyHash(block) {
   if (block.depth === blockchain.length + 1) {
     let blockHash = generateHash();
-    printConsole('HASH=' + blockHash + ', got ' + block.hash);
+    printConsole(
+      'HASH=' + blockHash + ', got ' + block.hash,
+      config.display.hashVerifications
+    );
     if (blockHash === block.hash) {
       blockchain.push(block);
     }
@@ -565,10 +580,8 @@ startServer();
 //   });
 // }, 2000);
 
-// then, greet the neighbor
-
+// then, greet all neighbors passed in args
 let neighborsArgs = args.slice(2);
-
 while (neighborsArgs.length >= 2) {
   const neighborHost = args[2];
   const neighborPort = parseInt(args[3]);
@@ -620,7 +633,10 @@ while (neighborsArgs.length >= 2) {
       if (res.length > blockchain.length) {
         blockchain = res;
       }
-      printConsole(`Got blockchain\n =>  ${JSON.stringify(response)}`, config.display.gotBlockchain);
+      printConsole(
+        `Got blockchain\n =>  ${JSON.stringify(response)}`,
+        config.display.gotBlockchain
+      );
     }
   );
 }
