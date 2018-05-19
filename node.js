@@ -392,7 +392,7 @@ function tryRegister(call, callback) {
 function tryBroadcast(call, callback) {
   if (utils.hasNotTreatedMessage(call.request.id)) {
     switch (call.request.type) {
-      case 'text':
+      case 'text': // was massively used for debugging purposes
         printConsole(`GOT TEXT: ${call.request.text.str}`);
         break;
 
@@ -403,18 +403,16 @@ function tryBroadcast(call, callback) {
         printConsole(rwl_txt, config.display.receivedWaitingList);
 
         call.request.waiting_list.operations.forEach(function(operation) {
-          // the operation is not in our waiting_list
+          // the operation is not in our waiting_list nor in the blockchain
           if (
             waiting_list
               .map(function(e) {
                 return e.id;
               })
-              .indexOf(operation.id) == -1
+              .indexOf(operation.id) == -1 &&
+            !isOperationInBlockchain(operation.id, blockchain)
           ) {
-            // nor in the blockchain
-            if (!isOperationInBlockchain(operation.id, blockchain)) {
-              waiting_list.push(operation);
-            }
+            waiting_list.push(operation);
           }
         });
 
@@ -443,6 +441,8 @@ function tryBroadcast(call, callback) {
               call.request.port
             })`
           );
+
+          // ask him all blocks we doesn't have (including our last one for verifictions)
           askBlockchains.askBlockchain(
             {
               depth: blockchain.length,
@@ -471,10 +471,13 @@ function tryBroadcast(call, callback) {
             }
           );
         } else if (call.request.block.depth <= blockchain.length) {
-          // just ignore that block
+          // just ignore that block, because we already have it
+          // (first block to come, is the one which win)
         } else {
           // is the next block; verify if hash is OK and add to the chain
-          verifyHash(call.request.block);
+          if (verifyHash(call.request.block)) {
+            blockchain.push(call.request.block);
+          }
         }
         break;
 
@@ -491,18 +494,69 @@ function tryBroadcast(call, callback) {
 /**
  * Verify the deep and the hash of a block
  * @param block block to verify
+ * @param blockDeep deep we want to check (default: blockchain.length + 1)
  */
-function verifyHash(block) {
-  if (block.depth === blockchain.length + 1) {
+function verifyHash(block, blockDeep) {
+  if (!block) return false;
+  let bd = !blockDeep ? blockchain.length + 1 : blockDeep;
+
+  // check if the deep of the block if what we expect
+  if (block.depth === bd) {
     let blockHash = generateHash();
     printConsole(
       'HASH=' + blockHash + ', got ' + block.hash,
       config.display.hashVerifications
     );
+
     if (blockHash === block.hash) {
-      blockchain.push(block);
+      return true;
     }
   }
+  return false;
+}
+
+/**
+ * Repairs a blockchain in case the hash was bad
+ * @param deepLvl deep level to fix
+ * @param host host of the node from which we received the block
+ * @param port port of the node from which we received the block
+ */
+function repairBlockchain(deepLvl, host, port) {
+  // check args
+  if (!deepLvl || !host || !port) return;
+
+  // check deep level value
+  if (deepLvl <= 0 || deepLvl > blockchain.length + 1) return;
+
+  const askBlockchains = new proto.GetBlockchain(
+    `${host}:${port}`,
+    grpc.credentials.createInsecure()
+  );
+  printConsole(`Asking node's blockchain (${host}:${port})`);
+  askBlockchains.askBlockchain(
+    {
+      depth: deepLvl,
+    },
+    (err, response) => {
+      if (err) {
+        printConsole(err);
+        printConsole(`ERROR: cannot get ${host}:${port}'s  blockchain.`);
+        return;
+      } else {
+        const res = response.block;
+        if (res[0].depth === deepLvl) {
+          if (res[0].hash === blockchain.slice(-1)[0].hash) {
+            for (let i = 1; i < res.length; i++) {
+              blockchain.push(res[i]);
+            }
+          } else {
+            // if bad hash, remove all op and take the others
+            repairBlockchain(deepLvl - 1, host, port);
+          }
+        }
+      }
+    }
+  );
 }
 
 /**
@@ -569,16 +623,6 @@ function exchange(call, callback) {
 
 // first, run the server
 startServer();
-
-// setInterval(() => {
-//   printConsole(`neighbors: ${JSON.stringify(neighbors)}`);
-//   broadcast({
-//     'type': 'text',
-//     'text': {
-//           str: 'this is a test!!',
-//         }
-//   });
-// }, 2000);
 
 // then, greet all neighbors passed in args
 let neighborsArgs = args.slice(2);
