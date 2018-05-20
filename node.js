@@ -458,13 +458,19 @@ function tryBroadcast(call, callback) {
                 return;
               } else {
                 const res = response.block;
-                if (res[0].depth === blockchain.length) {
+                if (res[0] && res[0].depth === blockchain.length) {
                   if (res[0].hash === blockchain.slice(-1)[0].hash) {
                     for (let i = 1; i < res.length; i++) {
                       blockchain.push(res[i]);
                     }
                   } else {
-                    // @TODO: if bad hash, remove all op and take the others
+                    // if the hash was bad, ask the sender to send the previous block, and we try to repair the blockchain (recursion if it's bad again)
+                    // our last block will be removed, all of its operations will be added to our waiting_list again
+                    repairBlockchain(
+                      blockchain.length - 1,
+                      call.request.host,
+                      call.request.port
+                    );
                   }
                 }
               }
@@ -477,6 +483,14 @@ function tryBroadcast(call, callback) {
           // is the next block; verify if hash is OK and add to the chain
           if (verifyHash(call.request.block)) {
             blockchain.push(call.request.block);
+          } else {
+            // if the hash was bad, ask the sender to send the previous block, and we try to repair the blockchain (recursion if it's bad again)
+            // our last block will be removed, all of its operations will be added to our waiting_list again
+            repairBlockchain(
+              blockchain.length - 1,
+              call.request.host,
+              call.request.port
+            );
           }
         }
         break;
@@ -528,6 +542,20 @@ function repairBlockchain(deepLvl, host, port) {
   // check deep level value
   if (deepLvl <= 0 || deepLvl > blockchain.length + 1) return;
 
+  // remove all blocks that are above deepLevel and add op to waiting_list
+  for (let i = blockchain.length - 1; i > deepLvl; i--) {
+    for (let j = 0; j < blockchain.operations.length; j++) {
+      waiting_list.push(blockchain[i].operations[j]);
+    }
+    // remove the last block from the bockchain
+    blockchain.splice(-1, 1);
+  }
+
+  // remove operations from the waiting list that are already in the blockchain
+  waiting_list = waiting_list.filter(
+    o => !isOperationInBlockchain(o.id, blockchain)
+  );
+
   const askBlockchains = new proto.GetBlockchain(
     `${host}:${port}`,
     grpc.credentials.createInsecure()
@@ -544,14 +572,22 @@ function repairBlockchain(deepLvl, host, port) {
         return;
       } else {
         const res = response.block;
-        if (res[0].depth === deepLvl) {
-          if (res[0].hash === blockchain.slice(-1)[0].hash) {
+
+        // just verify the expected results
+        if (res[0] && res[0].depth === deepLvl && deepLvl > 1) {
+          // if the hash match our last block, just add the blocks which follow
+          if (res[0].hash === blockchain[deepLvl].hash) {
             for (let i = 1; i < res.length; i++) {
               blockchain.push(res[i]);
             }
           } else {
             // if bad hash, remove all op and take the others
             repairBlockchain(deepLvl - 1, host, port);
+          }
+        } else if (deepLvl == 1 && res[0].depth == 1) {
+          // the full blockchain
+          for (let i = 0; i < res.length; i++) {
+            blockchain.push(res[i]);
           }
         }
       }
